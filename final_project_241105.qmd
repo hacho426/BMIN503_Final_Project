@@ -20,6 +20,9 @@ Describe the problem addressed, its significance, and some background to motivat
 
 The challenges faced by dementia caregivers are multifaceted, encompassing not only the physical and emotional demands of caregiving but also social and systemic barriers that limit access to essential support services. Among these challenges, the level of perceived social support stands out as a critical factor that can alleviate caregiver burden and enhance their ability to provide effective, compassionate care. High levels of perceived social support—comprising emotional, instrumental, and informational assistance—can significantly reduce caregiver stress, improve mental health, and promote better outcomes for both caregivers and care recipients. However, access to such support is often inconsistent and influenced by a range of demographic, caregiving, and health-related factors. The complexity of predicting which caregivers are more likely to receive formal support services highlights the need for a targeted approach that can inform policies and programs to better serve dementia caregivers.
 
+```{}
+```
+
 ```{r}
 # Load necessary libraries
 library(tidyverse)
