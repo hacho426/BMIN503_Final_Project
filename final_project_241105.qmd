@@ -11,17 +11,66 @@ embed-resources: true
 ------------------------------------------------------------------------
 
 ## Overview {#sec-overview}
-
-This project aims to investigate which demographic, caregiving, and health-related factors are most predictive of high levels of perceived social support among dementia caregivers, with a specific focus on identifying predictors for caregivers receiving formal support. Using data from the National Health and Aging Trends Study (NHATS), I am applying supervised machine learning methods to analyze patterns in social support access among this population. To deepen my approach, I consulted with Dr. Demiris from the School of Nursing, who provided insights into social determinants of health and their influence on caregiving dynamics, emphasizing the role of socioeconomic factors. I also spoke with Dr. Huang from the School of nursing, who guided me on suitable machine learning techniques for predicting support outcomes and advised on managing NHATS data’s complexity. You can find my project repository [here](https://github.com/YourUsername/YourRepoName).
+This project aims to investigate which demographic, caregiving, and
+health-related factors are most predictive of high levels of perceived social
+support among dementia caregivers, with a specific focus on identifying
+predictors for caregivers receiving formal support. Using data from the
+National Health and Aging Trends Study (NHATS), I am applying supervised
+machine learning methods to analyze patterns in social support access among
+this population. To deepen my approach, I consulted with Dr. Demiris from the
+School of Nursing, who provided insights into social determinants of health
+and their influence on caregiving dynamics, emphasizing the role of
+socioeconomic factors. I also spoke with Dr. Huang from the School of
+nursing, who guided me on suitable machine learning techniques for predicting
+support outcomes and advised on managing NHATS data’s complexity. You can
+find my project repository
+[here](https://github.com/hacho426/BMIN503_Final_Project/blob/master/final_project_241105.qmd).
 
 ## Introduction {#sec-introduction}
+The challenges faced by dementia caregivers are deeply complex and
+multifaceted, encompassing not only the physical and emotional demands of
+caregiving but also social  physical, and systemic barriers. These challenges
+are not apply physically demanding- such as providing around-the-clock care,
+assisting with activities of daily living, and managing the various health 
+complications of dementia- but they also take a significant burden on the 
+caregivers' emotional well-being. Caregivers often experience stress,
+anxiety, depression, and a sense of isolation, as the demands of caregiving 
+can leave little room for self-care, personal, or social engagement. Among
+them, caregivers for persons with dementia are put at high risks of anxiety
+and depression due to the nature of the diseases. The trajectory of dementia
+is not quietly common and varied based on individuals' pre-exisitng problems
+and multicomorbidities. In addition to this uncertaintity, caregivers often 
+face sigificant social and systemic barriers that limit their access to 
+essential support services. These barriers include financial strain, a lack
+of accessible respite care, insufficient knowledge about available resources,
+and cultural or social stigma associated with caregiving. Many caregivers
+also experience isolation due to lack of social engagement. 
 
-Describe the problem addressed, its significance, and some background to motivate the problem. This should extend what is in the @sec-overview.
+#Aim
+The aim of this study is to identify key caregiving activities and
+sociodemographic factors among persons living with dementia and their primary
+caregivers, analyzed as dyads, that are associated with formal support
+utilization. This analysis will be conducted using secondary data from the
+National Health and Aging Trends Study (NHATS) linked to the National Study
+of Caregiving (NSOC).
 
-The challenges faced by dementia caregivers are multifaceted, encompassing not only the physical and emotional demands of caregiving but also social and systemic barriers that limit access to essential support services. Among these challenges, the level of perceived social support stands out as a critical factor that can alleviate caregiver burden and enhance their ability to provide effective, compassionate care. High levels of perceived social support—comprising emotional, instrumental, and informational assistance—can significantly reduce caregiver stress, improve mental health, and promote better outcomes for both caregivers and care recipients. However, access to such support is often inconsistent and influenced by a range of demographic, caregiving, and health-related factors. The complexity of predicting which caregivers are more likely to receive formal support services highlights the need for a targeted approach that can inform policies and programs to better serve dementia caregivers.
 
-```{}
-```
+## Methods {#sec-methods}
+
+Describe the data used and general methodological approach used to address the problem described in the @sec-introduction. Subsequently, incorporate full R code necessary to retrieve and clean data, and perform analysis. Be sure to include a description of code so that others (including your future self) can understand what you are doing and why.
+
+This study uses data from the National Health and Aging Trends Study (NHATS)
+Round 11 and the National Study of Caregiving (NSOC)  Round 4, which include
+data collected in 2021. The NHATS is a publicly accessible dataset that
+includes a nationally representatative sample of adults aged 65 years old and
+older who are Medicare beneficiaries in the United States of America.
+
+
+## Results {#sec-results}
+
+Describe your results and include relevant tables, plots, and code/comments used to obtain them. You may refer to the @sec-methods as needed. End with a brief conclusion of your findings related to the question you set out to address. You can include references if you'd like, but this is not required.
+
+
 
 ```{r}
 # Load necessary libraries
