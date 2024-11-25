@@ -571,6 +571,9 @@ rf_fit |>
 ```
 
 ```{r}
+#cross validation 
+
+
 
 ```
 
