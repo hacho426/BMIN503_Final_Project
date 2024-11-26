@@ -739,6 +739,46 @@ autoplot(roc_curve(anxiety.rf.pred.values,
 metrics(anxiety.rf.pred.values, truth, .pred_class, .pred_true) #roc_auc = 0.5504219	
 ```
 
+#cross-validation
+```{r}
+# Set up 5-fold cross-validation
+train_control <- trainControl(method = "cv", number = 5)
+
+# Train Random Forest model with cross-validation
+rf_model_cv <- train(
+  depression ~ ss,         # Formula
+  data = depress1,          # Data
+  method = "rf",            # Random Forest method
+  trControl = train_control,  # Cross-validation settings
+  ntree = 100,              # Number of trees
+  tuneLength = 3            # Tuning parameter length for mtry
+)
+
+# Print the results of cross-validation
+print(rf_model_cv)
+
+# Get the final model (after cross-validation)
+final_rf_model <- rf_model_cv$finalModel
+depress1$ss <- as.factor(depress1$ss)
+
+rf_pred <- predict(final_rf_model, newdata = depress1)
+
+# View the predictions
+head(rf_pred)
+
+# Check confusion matrix for evaluation
+conf_matrix <- confusionMatrix(rf_pred, depress1$depression)
+print(conf_matrix)
+
+# Evaluate other metrics (e.g., F1-score, AUC)
+precision_rf <- conf_matrix$byClass["Pos Pred Value"]
+recall_rf <- conf_matrix$byClass["Sensitivity"]
+f1_score_rf <- 2 * (precision_rf * recall_rf) / (precision_rf + recall_rf)
+cat("F1-score:", f1_score_rf)
+
+```
+
+
 ```{r}
 library(caret)
 #depression
