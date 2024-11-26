@@ -10,29 +10,29 @@ number-sections: true
 embed-resources: true
 ---
 
-# Overview
+# *Overview*
 
-This project aims to investigate which demographic, caregiving social strains, and health-related factors are most predictive of high levels of emotional problems such as anxiety and depression among dementia caregivers. Using data from the National Health and Aging Trends Study (NHATS), I am applying supervised machine learning methods to analyze patterns in social support access among this population. To deepen my approach, I consulted with Drs. Demiris and Huang from the School of Nursing, who provided insights into social determinants of health and their influence on caregiving dynamics, emphasizing the role of socioeconomic factors. You can find my project repository [here](https://github.com/hacho426/BMIN503_Final_Project/blob/master/final_project_241105.qmd).
+*This project aims to investigate which demographic, caregiving social strains, and health-related factors are most predictive of high levels of emotional problems such as anxiety and depression among dementia caregivers. Using data from the National Health and Aging Trends Study (NHATS), I am applying supervised machine learning methods to analyze patterns in social support access among this population. To deepen my approach, I consulted with Drs. Demiris and Huang from the School of Nursing, who provided insights into social determinants of health and their influence on caregiving dynamics, emphasizing the role of socioeconomic factors. You can find my project repository [here](https://github.com/hacho426/BMIN503_Final_Project/blob/master/final_project_241105.qmd).*
 
-# Introduction
+# *Introduction*
 
-The challenges faced by dementia caregivers are deeply complex and multifaceted, encompassing not only the physical and emotional demands of caregiving but also social physical, and systemic barriers. These challenges are not apply physically demanding- such as providing around-the-clock care, assisting with activities of daily living, and managing the various health complications of dementia- but they also take a significant burden on the caregivers' emotional well-being. Caregivers often experience stress, anxiety, depression, and a sense of isolation, as the demands of caregiving can leave little room for self-care, personal, or social engagement. Among them, caregivers for persons with dementia are put at high risks of anxiety and depression due to the nature of the diseases. The trajectory of dementia is not quietly common and varied based on individuals' pre-exisitng problems and multicomorbidities. In addition to this uncertaintity, caregivers often face sigificant social and systemic barriers that limit their access to essential support services. These barriers include financial strain, a lack of accessible respite care, insufficient knowledge about available resources, and cultural or social stigma associated with caregiving. Many caregivers also experience isolation due to lack of social engagement.
+*The challenges faced by dementia caregivers are deeply complex and multifaceted, encompassing not only the physical and emotional demands of caregiving but also social physical, and systemic barriers. These challenges are not apply physically demanding- such as providing around-the-clock care, assisting with activities of daily living, and managing the various health complications of dementia- but they also take a significant burden on the caregivers' emotional well-being. Caregivers often experience stress, anxiety, depression, and a sense of isolation, as the demands of caregiving can leave little room for self-care, personal, or social engagement. Among them, caregivers for persons with dementia are put at high risks of anxiety and depression due to the nature of the diseases. The trajectory of dementia is not quietly common and varied based on individuals' pre-exisitng problems and multicomorbidities. In addition to this uncertaintity, caregivers often face sigificant social and systemic barriers that limit their access to essential support services. These barriers include financial strain, a lack of accessible respite care, insufficient knowledge about available resources, and cultural or social stigma associated with caregiving. Many caregivers also experience isolation due to lack of social engagement.*
 
-\@ Research Question: Which social strains and sociodemographic characteristics of caregivers most strongly predict anxiety and depression for caregiver of persons with living dementia, and how accurately can supervised machine learning models predict these outcomes?
+*\@ Research Question: Which social strains and sociodemographic characteristics of caregivers most strongly predict anxiety and depression for caregiver of persons with living dementia, and how accurately can supervised machine learning models predict these outcomes?*
 
-# Methods {#sec-methods}
+# *Methods* {#sec-methods}
 
-Describe the data used and general methodological approach used to address the problem described in the @sec-introduction. Subsequently, incorporate full R code necessary to retrieve and clean data, and perform analysis. Be sure to include a description of code so that others (including your future self) can understand what you are doing and why.
+*Describe the data used and general methodological approach used to address the problem described in the @sec-introduction. Subsequently, incorporate full R code necessary to retrieve and clean data, and perform analysis. Be sure to include a description of code so that others (including your future self) can understand what you are doing and why.*
 
-\*Dataset
+*\*Dataset*
 
-This study uses data from the National Health and Aging Trends Study (NHATS) Round 11 and the National Study of Caregiving (NSOC) Round 4, which include data collected in 2021. The NHATS is a publicly accessible dataset that includes a nationally representatative sample of adults aged 65 years old and older who are Medicare beneficiaries in the United States of America. The NSOC is conducted alongside the NHATS; participants in the NSOC are caregivers for older adults included in the NHATS. Both the NHATS and the NSOC were funded by the National Institute on Aging (R01AG062477; U01AG032947). When used together, the NHATS and NSOC provide valuable information on dyads of older adults receiving care and their family caregivers.^12^
+*This study uses data from the National Health and Aging Trends Study (NHATS) Round 11 and the National Study of Caregiving (NSOC) Round 4, which include data collected in 2021. The NHATS is a publicly accessible dataset that includes a nationally representatative sample of adults aged 65 years old and older who are Medicare beneficiaries in the United States of America. The NSOC is conducted alongside the NHATS; participants in the NSOC are caregivers for older adults included in the NHATS. Both the NHATS and the NSOC were funded by the National Institute on Aging (R01AG062477; U01AG032947). When used together, the NHATS and NSOC provide valuable information on dyads of older adults receiving care and their family caregivers.^12^*
 
-\*Samples
+*\*Samples*
 
-1.  Probable dementia was identified based on one of the following criteria: a self-reported diagnosis of dementia or Alzheimer’s disease by a physician, a score of 2 or higher on the AD8 screening instrument administered to proxy respondents, or a score that is 1.5 standard deviations below the mean on a range of cognitive tests.
+1.  *Probable dementia was identified based on one of the following criteria: a self-reported diagnosis of dementia or Alzheimer’s disease by a physician, a score of 2 or higher on the AD8 screening instrument administered to proxy respondents, or a score that is 1.5 standard deviations below the mean on a range of cognitive tests.*
 
-2.  Caregivers of probable or diagnosed dementia patients were identified from the NSOC and NHATS data set.
+2.  *Caregivers of probable or diagnosed dementia patients were identified from the NSOC and NHATS data set.*
 
     ```{r}
     #Afer retriving NHATS Round 11 and NSOC ROUND 4, I specifically selected the sample (from NHATS R11- r11demclas). And then, I merged those necessary datasets. 
@@ -47,7 +47,7 @@ This study uses data from the National Health and Aging Trends Study (NHATS) Rou
 
     ```
 
-\*Predictors:
+*\*Predictors:*
 
 ```{r}
 #Caregiver level factors are identified as caregivers' age, race, gender, self-reported income, and the highest education level. Also, these are recoded accordingly.  The education level of the caregivers was categorized as "Less than high school (0)”, “High School (1)”, and “College or above (2).” For economic status, the caregivers' reported income from the previous year was used. This study included both informal and formal support as part of the caregivers' social determinants of health. Informal support included having friends or family (a) to talk to about important life matters, (b) to help with daily activities, such as running errands, and (c) to assist with care provision.10 Formal support included (a) participation in a support group for caregivers, (b) access to respite services that allowed the caregiver to take time off, and (c) involvement in a training program that assisted the caregiver in providing care for the care recipient.10 We used these individual items as support questions and each support question was answered by indicating whether or not they received support.
@@ -56,13 +56,14 @@ This study uses data from the National Health and Aging Trends Study (NHATS) Rou
 merged_dementia1$chd11dage 
 #Race
 table(merged_dementia1$crl11dcgracehisp)
+table(merged_dementia1$crl11dcgracehisp_recode)
 # Recode `race` to create a new binary variable
 # 1 for "White, non-Hispanic" and 0 for "Non-White"
 merged_dementia1 <- merged_dementia1 %>%
   mutate(
     crl11dcgracehisp_recode = case_when(
       crl11dcgracehisp == 1 ~ 1,  # White, non-Hispanic
-      crl11dcgracehisp %in% c(2, 3, 4, 5) ~ 0  
+      crl11dcgracehisp %in% c(2, 3, 4, 5, 6) ~ 0  
     ))  
 # Gender: Male as reference (0), Female as 1
 merged_dementia1 <- merged_dementia1 |>
@@ -71,8 +72,6 @@ merged_dementia1 <- merged_dementia1 |>
     as.character(c11gender) == "2" ~ 1,
     TRUE ~ NA_real_  
   ))
-#self-reported income
-
 
 #Education
 table(merged_dementia1$chd11educ)
@@ -86,6 +85,24 @@ merged_dementia1 <- merged_dementia1|>
   ))
 
 merged_dementia1 <- merged_dementia1[!merged_dementia1$chi11income %in% c(-8, -6, -7, 0), ]
+table(merged_dementia1$chi11income)
+
+
+## marital status 
+table(merged_dementia1$chd11martstat )
+
+merged_dementia1 <- merged_dementia1|>
+  mutate(chd11martstat_recode = case_when(
+    chd11martstat == 1 ~ 1,     # married
+    chd11martstat %in% 2:6 ~ 0,     # not married (single, divorced)
+    chd11martstat == -1 ~ NA_real_, 
+    TRUE ~ NA_real_             
+  ))
+
+table(merged_dementia1$chd11martstat_recode)
+
+
+
 ```
 
 ```{r}
@@ -174,7 +191,7 @@ if("pa11prcranoth" %in% colnames(merged_dementia1)) {
 
 ```
 
-#Outcome
+*#Outcome*
 
 ```{r}
 #Caregivers' anxiety and depressive symptoms are measured by two questions each.First, anxiety was measured Generalized Anxiety Disorder-2 (GAD-2) Scale which consists of two questions. Since the NHATS provided GAD-2 data, this study utilized it to measure anxiety levels among care recipients. Each item on the scale is rated on a four-point Likert scale, ranging from 0 (not at all) to 3 (nearly every day), resulting in a total score between 0 and 6. Higher scores correspond to greater anxiety, with a total GAD-2 score of 3 or more indicating anxiety. The care recipients' depression was evaluated using the Patient Health Questionnaire-2 (PHQ-2) Scale.17 Given that the NHATS included PHQ-2, this study utilized it to measure depression in care recipients. Each item on the scale was measured with a four-point Likert scale, ranging from 0 (not at all) to 3 (nearly every day), resulting a total score between 0 and 6, with higher scores indicating more severe depression. Depression was defined as a total score of 3 or higher.
@@ -193,127 +210,133 @@ if("pa11prcranoth" %in% colnames(merged_dementia1)) {
  
 ```
 
-**Data analysis**
+***Data analysis***
 
-For data analysis, descriptive data analysis such as mean, standard deviations, ranges, and percentages were used. To examine how caregivers' social strains and caregiver level factors influence depression of caregiver, logistic regression analyses were used. Using the conceptual framework of this study as guidance, we conducted a univariate logistic regression analysis to examine which caregivers' social strains and caregiver level factors influence caregiver anxiety and depression, after controlling for care recipient-level factors. Variables with a p-value below 0.05 in the univariate analyses were incorporated into the subsequent multivariate model. Next, we built a multivariate logistic regression model to examine which caregivers' social strains and caregiver level factors influence caregiver anxiety and depression the most. All statistical analyses were conducted using R, and statistical significance was set at p-value less than 0.05.
+*For data analysis, descriptive data analysis such as mean, standard deviations, ranges, and percentages were used. To examine how caregivers' social strains and caregiver level factors influence depression of caregiver, logistic regression analyses were used. Using the conceptual framework of this study as guidance, we conducted a univariate logistic regression analysis to examine which caregivers' social strains and caregiver level factors influence caregiver anxiety and depression, after controlling for care recipient-level factors. Variables with a p-value below 0.05 in the univariate analyses were incorporated into the subsequent multivariate model. Next, we built a multivariate logistic regression model to examine which caregivers' social strains and caregiver level factors influence caregiver anxiety and depression the most. All statistical analyses were conducted using R, and statistical significance was set at p-value less than 0.05.*
 
 ```{r}
 #Create subset data from merged_dementia1
 merged_dementia2_sub <- subset(
   merged_dementia1,
-  select = c(spid, pa11hlkepfvst_recode, pa11hlkpfrclb_recode, pa11hlkpgoenj_recode, pa11hlkpfrwrk_recode, pa11hlkpfrvol_recode, pa11hlkpfrclb_recode, pa11prcranoth_recode, crl11dcgracehisp_recode, total_SS_cat, c11gender_recode, chd11educ_recode, chi11medicaid, chd11dage, gad2_cg_cat, phq2_cg_cat, chi11income
+  select = c(spid, pa11hlkepfvst_recode, pa11hlkpfrclb_recode, pa11hlkpgoenj_recode, pa11hlkpfrwrk_recode, pa11hlkpfrvol_recode, pa11hlkpfrclb_recode, pa11prcranoth_recode, crl11dcgracehisp_recode, total_SS_cat, c11gender_recode, chd11educ_recode, chi11medicaid, chd11dage, gad2_cg_cat, phq2_cg_cat, chi11income, chd11martstat_recode
   ))
 
-#univariate logistics
-lm_model_univ1 <- glm(phq2_cg_cat ~ total_SS_cat, data = merged_dementia2_sub)
-lm_model_univ2 <- glm(gad2_cg_cat ~ total_SS_cat, data = merged_dementia2_sub)
-summary(lm_model_univ1)
-summary(lm_model_univ2)
-lm_model_univ3 <- glm(phq2_cg_cat ~ pa11hlkepfvst_recode, data = merged_dementia2_sub)
-summary(lm_model_univ3)
-lm_model_univ4 <- glm(phq2_cg_cat ~pa11hlkpfrclb_recode, data = merged_dementia2_sub)
-summary(lm_model_univ4)
-lm_model_univ5 <- glm(phq2_cg_cat ~pa11hlkpgoenj_recode, data = merged_dementia2_sub)
-summary(lm_model_univ5)
-lm_model_univ3a <- glm(gad2_cg_cat ~ pa11hlkepfvst_recode, data = merged_dementia2_sub)
-summary(lm_model_univ3a)
-lm_model_univ4a <- glm(gad2_cg_cat ~pa11hlkpfrclb_recode, data = merged_dementia2_sub)
-summary(lm_model_univ4a) ## significant
-lm_model_univ5a <- glm(gad2_cg_cat ~pa11hlkpgoenj_recode, data = merged_dementia2_sub)
-summary(lm_model_univ5a)
-lm_model_univ6 <- glm(phq2_cg_cat ~pa11hlkpfrwrk_recode, data = merged_dementia2_sub)
-summary(lm_model_univ6)
-lm_model_univ6a <- glm(gad2_cg_cat ~pa11hlkpfrwrk_recode, data = merged_dementia2_sub)
-summary(lm_model_univ6a) ##p=0.1
-lm_model_univ7 <- glm(phq2_cg_cat ~pa11hlkpfrvol_recode, data = merged_dementia2_sub)
-summary(lm_model_univ7)
-lm_model_univ7a <- glm(gad2_cg_cat ~pa11hlkpfrvol_recode, data = merged_dementia2_sub)
-summary(lm_model_univ7a)
-lm_model_univ8 <- glm(phq2_cg_cat ~pa11hlkpfrvol_recode, data = merged_dementia2_sub)
-summary(lm_model_univ8) #p=0.1
-lm_model_univ7a <- glm(gad2_cg_cat ~pa11hlkpfrvol_recode, data = merged_dementia2_sub)
-summary(lm_model_univ7a) #p=0.1
-lm_model_univ8a <- glm(gad2_cg_cat ~chd11educ_recode, data = merged_dementia2_sub)
-summary(lm_model_univ8a)
-lm_model_univ8b <- glm(phq2_cg_cat ~chd11educ_recode, data = merged_dementia2_sub)
-summary(lm_model_univ8b)
-lm_model_univ9a <- glm(gad2_cg_cat ~c11gender_recode, data = merged_dementia2_sub)
-summary(lm_model_univ9a) ##significant
-lm_model_univ9b <- glm(phq2_cg_cat ~c11gender_recode, data = merged_dementia2_sub)
-summary(lm_model_univ9b) 
-lm_model_univ10a <- glm(gad2_cg_cat ~crl11dcgracehisp_recode, data = merged_dementia2_sub)
-summary(lm_model_univ10a) 
-lm_model_univ10b <- glm(phq2_cg_cat ~crl11dcgracehisp_recode, data = merged_dementia2_sub)
-summary(lm_model_univ10b) 
-lm_model_univ11a <- lm(gad2_cg_cat ~chi11income, data = merged_dementia2_sub)
-summary(lm_model_univ11a) 
-lm_model_univ11b <- lm(phq2_cg_cat ~chi11income, data = merged_dementia2_sub)
-summary(lm_model_univ11b) # p= 0.1
-lm_model_univ12a <- lm(gad2_cg_cat ~chd11dage, data = merged_dementia2_sub)
-summary(lm_model_univ11a) 
-lm_model_univ12b <- lm(phq2_cg_cat ~chd11dage, data = merged_dementia2_sub)
-summary(lm_model_univ12b)  
-
-```
-
-```{r}
 #multivariates- indiivdaul caregivers' social strains (depression)
-lm_model_multi1 <- glm(phq2_cg_cat~ pa11hlkepfvst_recode + pa11hlkpfrclb_recode + pa11hlkpgoenj_recode + pa11hlkpfrwrk_recode + pa11hlkpfrvol_recode + pa11hlkpfrclb_recode + pa11prcranoth_recode + chd11educ_recode + crl11dcgracehisp_recode + chi11medicaid + chd11dage + chi11income,  
+lm_model_multi1 <- glm(phq2_cg_cat~ pa11hlkepfvst_recode + pa11hlkpfrclb_recode + pa11hlkpgoenj_recode + pa11hlkpfrwrk_recode + pa11hlkpfrvol_recode + pa11hlkpfrclb_recode + pa11prcranoth_recode + chd11educ_recode + crl11dcgracehisp_recode + chi11medicaid + chd11dage + chi11income + chd11martstat_recode,  
                        data = merged_dementia2_sub, 
                        family = binomial)
-summary (lm_model_multi1)   # chi11income shows significance
+summary (lm_model_multi1)   # income = (p = 0.1)
 
 #multivariates (anxiety)
-lm_model_multi2 <- glm(gad2_cg_cat~ pa11hlkepfvst_recode + pa11hlkpfrclb_recode + pa11hlkpgoenj_recode + pa11hlkpfrwrk_recode + pa11hlkpfrvol_recode + pa11hlkpfrclb_recode + pa11prcranoth_recode + chd11educ_recode + crl11dcgracehisp_recode + chi11medicaid + chd11dage + chi11income,  
+lm_model_multi2 <- glm(gad2_cg_cat~ pa11hlkepfvst_recode + pa11hlkpfrclb_recode + pa11hlkpgoenj_recode + pa11hlkpfrwrk_recode + pa11hlkpfrvol_recode + pa11hlkpfrclb_recode + pa11prcranoth_recode + chd11educ_recode + crl11dcgracehisp_recode + chi11medicaid + chd11dage + chi11income + chd11martstat_recode,  
                        data = merged_dementia2_sub, 
                        family = binomial)
-summary (lm_model_multi2)
+summary (lm_model_multi2) # income (p = 0.1)
 
 #multivariates- combined caregivers' social strains and depression
-lm_model_multi3 <- glm(phq2_cg_cat ~ total_SS_cat + chd11educ_recode + crl11dcgracehisp_recode + chi11medicaid + chd11dage + chi11income,  
+lm_model_multi3 <- glm(phq2_cg_cat ~ total_SS_cat + chd11educ_recode + crl11dcgracehisp_recode + chi11medicaid + chd11dage + chi11income + chd11martstat_recode,
                        data = merged_dementia2_sub, 
                        family = binomial)
-summary (lm_model_multi3) # income was statisticlly significant (p <0.05)
+summary (lm_model_multi3) # race (p= 0.1)
 odds_ratios <- exp(coef(lm_model_multi3))
  odds_ratios
 
 ## combined social strains and anxiety 
-lm_model_multi4 <- glm(gad2_cg_cat ~ total_SS_cat + chd11educ_recode + crl11dcgracehisp_recode + chi11medicaid + chd11dage + chi11income,  
+lm_model_multi4 <- glm(gad2_cg_cat ~ total_SS_cat + chd11educ_recode + crl11dcgracehisp_recode + chi11medicaid + chd11dage + chi11income + chd11martstat_recode,
                        data = merged_dementia2_sub, 
                        family = binomial)
-summary (lm_model_multi4) 
+summary (lm_model_multi4) # income (p = 0.1)
 odds_ratios <- exp(coef(lm_model_multi4))
  odds_ratios
 
 ```
 
 ```{r}
+# Convert to a data frame (if it's not already) and create training set 'anxiety' and 'depression' 
+merged_dementia2_sub <- as.data.frame(merged_dementia2_sub)
 
-anxiet1 <- merged_dementia2_sub |>
-  select(total_SS_cat, gad2_cg_cat, chi11income, c11gender_recode, chd11educ_recode, crl11dcgracehisp_recode, chd11dage) |>
+anxiety <- merged_dementia2_sub |>
+  dplyr::select(total_SS_cat, gad2_cg_cat, chi11income, c11gender_recode, chd11educ_recode, crl11dcgracehisp_recode, chd11dage, chd11martstat_recode) |>
+  drop_na()
+
+anxiety
+
+
+depression <- merged_dementia2_sub |>
+  dplyr::select(total_SS_cat, phq2_cg_cat, chi11income, c11gender_recode, chd11educ_recode, crl11dcgracehisp_recode, chd11dage, chd11martstat_recode) |>
+  drop_na()
+
+depression
+```
+
+# *Results*
+
+*Descriptive studies: The mean age of the caregivers was 62.6 ±13.5 (20–95) years. The majority of participants were female (65.9%), high school graduates (52.3%), married or living with a partner (57.8%), and employed (64.4%). Approximately 72% of the care recipients were identified as having probable dementia, whereas 28% were classified as having possible dementia. Many relied on their caregivers for basic activities of daily living and instrumental activities of daily living. Approximately 26% to 29% of care recipients exhibited behavioral and psychological symptoms, such as anxiety or depression.*
+
+```{r}
+
+summary(merged_dementia1$demclas)
+ggplot(merged_dementia1, aes(demclas)) + 
+    geom_histogram(breaks = seq(0, 2, 1), 
+                   color = "blue", fill = "blue", alpha = 0.7) 
+summary(depression)
+
+#Caregiver's age
+ggplot(merged_dementia1, aes(chd11dage )) + 
+    geom_histogram(aes(y = after_stat(density)), breaks = seq(0, 80, 1), 
+                   color = "blue", fill = "blue", alpha = 0.7) +
+    geom_density(color = "red")
+#Caregiver's education 
+ggplot(merged_dementia1, aes(chd11educ)) + 
+    geom_histogram(breaks = seq(0, 8, 1), 
+                   color = "blue", fill = "blue", alpha = 0.7) 
+
+# caregiver's
+
+```
+
+*Results_Machine learning*
+
+```{r}
+#| label: load-packages
+#| include: false
+
+library(tidyverse)
+library(kernlab)
+library(randomForest)
+library(glmnet)
+library(xgboost)
+library(vip)
+library(tidymodels)
+library(yardstick)
+library(pROC)
+tidymodels_prefer()
+
+
+```
+
+```{r}
+
+```
+
+```{r}
+set.seed(1234)
+
+#Preparing training data 
+anxiety <- as.data.frame(anxiety)
+
+
+
+anxiet1 <- anxiety |>
+  select(total_SS_cat, gad2_cg_cat, chi11income, c11gender_recode, chd11educ_recode, crl11dcgracehisp_recode, chd11dage, chd11martstat_recode) |>
   drop_na() |>
   mutate(ss = factor(total_SS_cat, levels = c(0, 1), 
-                           labels = c("0", "1"))) |>
+                           labels = c("false", "true"))) |>
   mutate(anxiety = factor(gad2_cg_cat, levels = c(0, 1),
                          labels = c("false", "true"))) 
 anxiet1
-```
 
-# Results
-
-Descriptive studies
-
-```{r}
-
-```
-
-Describe your results and include relevant tables, plots, and code/comments used to obtain them. You may refer to the @sec-methods as needed.
-
-```{r}
-
-set.seed(1234)
 anxiety_split <- initial_split(anxiet1, 
-                            strata = anxiety, 
                             prop = 0.80)
 anxiety_split
 
@@ -322,17 +345,18 @@ anxiety_test <- testing(anxiety_split)
 
 anxiety_train
 
-#From last time: declare type of model and its engine
+anxiety_train <- anxiety_train |>
+  mutate(anxiety = as.factor(anxiety))
+
 lr_cls_spec <- 
   logistic_reg() |> 
   set_engine("glm")
 
-#Fit on the training data
 lr_cls_fit <- 
   lr_cls_spec |>
   fit(anxiety ~ ss, data = anxiety_train)
-#Perform 10-fold cross validation on the training data
 
+#Perform 10-fold cross validation on the training data
 anxiety_folds <- vfold_cv(anxiety_train, v = 10)
 anxiety_folds
 
@@ -358,9 +382,7 @@ autoplot(roc_curve(anxiety_glm_cv_preds,
         .pred_true))
 
 #Overall metrics of CV results
-collect_metrics(glm_fit_cv)
-
-anxiet1$ss <- factor(anxiet1$ss, levels = levels(anxiety_train$ss))
+collect_metrics(glm_fit_cv) # mean_roc_auc = 0.5652078		
 
 
 #Prediction on the test data
@@ -372,29 +394,88 @@ anxiety.lr.pred.values.test <-  bind_cols(
 anxiety.lr.pred.values.test
 
 #Plot of ROC curve of prediction on test results
-autoplot(roc_curve(anxiety.lr.pred.values.test, 
-                   truth, 
+autoplot(roc_curve(anxiety.lr.pred.values.test, truth,
                    .pred_true))
 
 #Metrics of prediction on test data
 metrics(anxiety.lr.pred.values.test, truth, .pred_class, .pred_true)
-#roc_auc = 0.4612943	
-#accuracy = 0.6902655
+#roc_auc = 0.4495781		
+#accuracy = 0.6968085	
 ```
 
 ```{r}
-#| label: load-packages
-#| include: false
+depress1 <- depression |>
+  select(total_SS_cat, phq2_cg_cat, chi11income, c11gender_recode, chd11educ_recode, crl11dcgracehisp_recode, chd11dage, chd11martstat_recode) |>
+  drop_na() |>
+  mutate(ss = factor(total_SS_cat, levels = c(0, 1), 
+                           labels = c("false", "true"))) |>
+  mutate(depression = factor(phq2_cg_cat, levels = c(0, 1),
+                         labels = c("false", "true"))) 
+depress1
 
-library(tidyverse)
-library(kernlab)
-library(randomForest)
-library(glmnet)
-library(xgboost)
-library(vip)
-library(tidymodels)
-library(yardstick)
-tidymodels_prefer()
+depression_split <- initial_split(depress1, 
+                            prop = 0.80)
+depression_split
+
+depression_train <- training(depression_split)
+depression_test <- testing(depression_split)
+
+depression_train
+
+depression_train <- depression_train |>
+  mutate(depression = as.factor(depression))
+
+lr_cls_spec <- 
+  logistic_reg() |> 
+  set_engine("glm")
+
+lr_cls_fit <- 
+  lr_cls_spec |>
+  fit(depression ~ ss, data = depression_train)
+
+#Perform 10-fold cross validation on the training data
+depression_folds <- vfold_cv(depression_train, v = 10)
+anxiety_folds
+
+#Create a workflow() for fitting the glm
+glm_wf <- workflow() |>
+  add_model(lr_cls_spec) |>
+  add_formula(depression ~ ss)
+  
+#Use workflow to fit model with each fold of resampled data
+glm_fit_cv <- 
+  glm_wf |>
+  fit_resamples(
+    resamples = depression_folds, 
+    control = control_resamples(save_pred = TRUE)
+  )
+
+#Collect predictions out of folds into one tibble
+depression_glm_cv_preds <- collect_predictions(glm_fit_cv)
+
+#Plot of ROC curve of CV results
+autoplot(roc_curve(depression_glm_cv_preds, 
+        depression, 
+        .pred_true))
+
+#Overall metrics of CV results
+collect_metrics(glm_fit_cv) # mean_roc_auc = 0.4892388			
+#Prediction on the test data
+depression.lr.pred.values.test <-  bind_cols(
+  truth = depress1$depression,
+  predict(lr_cls_fit, depress1),
+  predict(lr_cls_fit, depress1, type = "prob")
+)
+depression.lr.pred.values.test
+
+#Plot of ROC curve of prediction on test results
+autoplot(roc_curve(depression.lr.pred.values.test, truth, .pred_true))
+
+#Metrics of prediction on test data
+metrics(anxiety.lr.pred.values.test, truth, .pred_class, .pred_true) #ROC_AUC 0.4495781, accuracy 0.6968085	
+```
+
+```{r}
 #SVM- Train the SVM Model. anxiety ~ ss: Specifies that anxiety is the target variable and ss is the predictor variable.
 
 #Model specification
@@ -411,7 +492,7 @@ svm_cls_fit
 
 anxiety.svm.pred.values <- bind_cols(
   truth = anxiet1$anxiety,  
-  class_pred = predict(svm_cls_fit, ss),  # Predicted class labels
+  class_pred = predict(svm_cls_fit, anxiet1),  # Predicted class labels
   prob_pred = predict(svm_cls_fit, anxiet1, type = "prob")  # Predicted probabilities
 )
 
@@ -493,15 +574,50 @@ svm_fit_cv |>
   autoplot()
 ```
 
-#Random forest
+*#Random forest*
 
 ```{r}
+
+
+
 rf_spec <- 
   rand_forest(trees = 1000, min_n = 5) |> 
   set_engine("randomForest", importance = TRUE) |>
   set_mode("classification")
 rf_spec
  
+
+# Train a random forest model
+rf_model <- randomForest(anxiety ~  ss, 
+                         data=anxiet1, ntree=100)
+# Make predictions -> highet F1 score-> we can say that for decision tool,
+#random forest model is the best model in this dataset; among the 4 different algorithms tested previously
+
+rf_pred <- predict(rf_model, newdata=anxiet1)
+conf_matrix_rf <-confusionMatrix(rf_pred, anxiet1$ss)
+precision_rf <- conf_matrix_rf$byClass["Pos Pred Value"]  # Precision
+recall_rf <- conf_matrix_rf$byClass["Sensitivity"]        # Recall
+f1_score_rf <- 2 * (precision_rf * recall_rf) / (precision_rf + recall_rf)
+cat("F1-score_svm:", f1_score_rf)  # F1-score = 0.9037901
+#### Set up the trainControl for 5-fold cross-validation
+train_control <- trainControl(method = "cv", number = 5)
+# Step 1: Predict probabilities
+rf_probs <- predict(rf_model, newdata = anxiet1, type = "prob")
+
+# Step 2: Compute ROC Curve
+# Assuming anxiet1$ss is the true label and rf_probs[, "positive_class"] gives probabilities for the positive class
+roc_obj <- roc(anxiet1$ss, rf_probs[, "true"])  
+# Step 3: AUC
+auc_value <- auc(roc_obj)
+cat("AUC:", auc_value, "\n")
+
+# Step 4: Plot ROC Curve
+ggroc(roc_obj) +
+  ggtitle("ROC Curve for Random Forest Model") +
+  xlab("False Positive Rate") +
+  ylab("True Positive Rate")
+
+
 anxiet1$ss <- factor(anxiet1$ss, levels = levels(anxiet1$ss))
 
 rf_fit <- rf_spec |>
@@ -509,7 +625,6 @@ rf_fit <- rf_spec |>
 rf_fit
 
 anxiety.rf.pred.values <- bind_cols(
-  truth = anxiet1$anxiety,
   predict(rf_fit, anxiety),
   predict(rf_fit, anxiety, type = "prob")
 )
@@ -565,22 +680,71 @@ rf_fit |>
   extract_fit_engine() |>
   importance()
 
+rf_engine <- rf_fit |> extract_fit_engine()
+vip(rf_engine)
+importance_values <- importance(rf_engine)
+
 rf_fit |>
   extract_fit_engine() |>
   vip()
 ```
 
 ```{r}
-#cross validation 
+#XGBoost
+
+# Model specification
+bt_spec <- 
+  boost_tree(trees = 50,
+             tree_depth = 4) |>
+  set_mode("classification") |>
+  set_engine("xgboost")
+
+# Recipe
+bt_recipe <-
+  recipe(ss ~ ., data = anxiet1) |>
+  step_dummy(all_nominal_predictors()) |>
+  step_normalize(all_predictors())
+
+# Workflow specification
+bt_workflow <- workflow() |>
+  add_model(bt_spec) |>
+  add_recipe(bt_recipe)
+
+# Model fit to the training data
+bt_fit <- fit(bt_workflow, data = anxiet1)
+
+# Predictions (bind truth and predictions)
+anxiet1.bt.pred.values <- bind_cols(
+  truth = anxiet1$ss,
+  predict(bt_fit, anxiet1),
+  predict(bt_fit, anxiet1, type = "prob")
+)
+
+# Evaluate model performance (ROC AUC)
+roc_auc(anxiet1.bt.pred.values, truth, .pred_true)
+
+# Plot ROC curve
+autoplot(roc_curve(anxiet1.bt.pred.values, truth, .pred_true))
+
+# Variable importance using vip
+vip(bt_fit)
+
+# Variable importance extracted from the xgboost model object
+bt_object <- pull_workflow_fit(bt_fit)$fit
+xgb.importance(model = bt_object)
+
 
 
 
 ```
 
 ```{r}
+system("quarto render final_project_241121.qmd --to html")
 
 ```
 
-## Conclusion
+XGbooster: The analysis shows that `total_SS_cat` is the most important variable, overwhelmingly driving the model's predictive accuracy with the highest gain (99.9%), cover (90.5%), and frequency (57.7%). Secondary variables like `chd11dage` (age) and `chi11income` (income) have moderate importance, contributing to 5% and 2.3% of splits, respectively. In contrast, `c11gender_recode` (gender) and `chd11martstat_recode` (marital status) have minimal impact, with low gain, cover, and frequency (3.8% each), suggesting they may not significantly enhance the model. Future iterations should focus on the dominant role of `total_SS_cat` while reconsidering less impactful variables to streamline the model.
 
-This the conclusion. The @sec-results can be invoked here.
+## *Conclusion*
+
+*This the conclusion. The @sec-results can be invoked here.*
