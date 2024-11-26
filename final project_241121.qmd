@@ -226,13 +226,15 @@ lm_model_multi1 <- glm(phq2_cg_cat~ pa11hlkepfvst_recode + pa11hlkpfrclb_recode 
                        data = merged_dementia2_sub, 
                        family = binomial)
 summary (lm_model_multi1)   # income = (p = 0.1)
-
+odds_ratios <- exp(coef(lm_model_multi1))
+ odds_ratios
 #multivariates (anxiety)
 lm_model_multi2 <- glm(gad2_cg_cat~ pa11hlkepfvst_recode + pa11hlkpfrclb_recode + pa11hlkpgoenj_recode + pa11hlkpfrwrk_recode + pa11hlkpfrvol_recode + pa11hlkpfrclb_recode + pa11prcranoth_recode + chd11educ_recode + crl11dcgracehisp_recode + chi11medicaid + chd11dage + chi11income + chd11martstat_recode,  
                        data = merged_dementia2_sub, 
                        family = binomial)
 summary (lm_model_multi2) # income (p = 0.1)
-
+odds_ratios <- exp(coef(lm_model_multi2))
+ odds_ratios
 #multivariates- combined caregivers' social strains and depression
 lm_model_multi3 <- glm(phq2_cg_cat ~ total_SS_cat + chd11educ_recode + crl11dcgracehisp_recode + chi11medicaid + chd11dage + chi11income + chd11martstat_recode,
                        data = merged_dementia2_sub, 
@@ -258,23 +260,21 @@ merged_dementia2_sub <- as.data.frame(merged_dementia2_sub)
 anxiety <- merged_dementia2_sub |>
   dplyr::select(total_SS_cat, gad2_cg_cat, chi11income, c11gender_recode, chd11educ_recode, crl11dcgracehisp_recode, chd11dage, chd11martstat_recode) |>
   drop_na()
-
 anxiety
-
 
 depression <- merged_dementia2_sub |>
   dplyr::select(total_SS_cat, phq2_cg_cat, chi11income, c11gender_recode, chd11educ_recode, crl11dcgracehisp_recode, chd11dage, chd11martstat_recode) |>
   drop_na()
-
 depression
 ```
 
-# *Results*
+Results
 
 *Descriptive studies: The mean age of the caregivers was 62.6 ±13.5 (20–95) years. The majority of participants were female (65.9%), high school graduates (52.3%), married or living with a partner (57.8%), and employed (64.4%). Approximately 72% of the care recipients were identified as having probable dementia, whereas 28% were classified as having possible dementia. Many relied on their caregivers for basic activities of daily living and instrumental activities of daily living. Approximately 26% to 29% of care recipients exhibited behavioral and psychological symptoms, such as anxiety or depression.*
 
 ```{r}
-
+library(ggplot2)
+library(haven)
 summary(merged_dementia1$demclas)
 ggplot(merged_dementia1, aes(demclas)) + 
     geom_histogram(breaks = seq(0, 2, 1), 
@@ -286,16 +286,67 @@ ggplot(merged_dementia1, aes(chd11dage )) +
     geom_histogram(aes(y = after_stat(density)), breaks = seq(0, 80, 1), 
                    color = "blue", fill = "blue", alpha = 0.7) +
     geom_density(color = "red")
+
+#Caregiver's gender
+ggplot(merged_dementia1, aes(x = factor(c11gender))) + 
+  geom_bar(fill = "steelblue", color = "black", alpha = 0.7) +
+  scale_x_discrete(
+    name = "Gender",
+    labels = c("1" = "Male", "2" = "Female")  # Label the genders based on the original codes
+  ) +
+  labs(
+    title = "Gender Distribution", 
+    x = "Gender", 
+    y = "Count"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels
+    legend.position = "none"  # No legend needed for this plot
+  )
+
+
 #Caregiver's education 
-ggplot(merged_dementia1, aes(chd11educ)) + 
-    geom_histogram(breaks = seq(0, 8, 1), 
-                   color = "blue", fill = "blue", alpha = 0.7) 
+merged_dementia1 <- merged_dementia1 %>%
+  filter(!is.na(chd11educ))
+ggplot(merged_dementia1, aes(x = chd11educ)) + 
+  geom_bar(
+    fill = "blue", 
+    color = "black", 
+    alpha = 0.7
+  ) +
+  scale_x_discrete(
+    name = "Education Level", 
+    labels = c(
+      "-1" = "No School", 
+      "2" = "Primary (1-8th)", 
+      "3" = "9-12th Grade", 
+      "4" = "High School Diploma", 
+      "5" = "Trade Certificate", 
+      "6" = "Some College (No Degree)", 
+      "7" = "Associate", 
+      "8" = "Bachelor's Degree"
+    )
+  ) +
+  labs(
+    title = "Distribution of Caregiver Education Levels", 
+    x = "Education Level", 
+    y = "Count"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate x-axis labels for clarity
+    legend.position = "none"  # Remove legend (not needed for this plot)
+  )
 
-# caregiver's
-
+# caregiver's martial status
+gplot(merged_dementia1, aes(chd11dage )) + 
+    geom_histogram(aes(y = after_stat(density)), breaks = seq(0, 80, 1), 
+                   color = "blue", fill = "blue", alpha = 0.7) +
+    geom_density(color = "red")
 ```
 
-*Results_Machine learning*
+# Results
 
 ```{r}
 #| label: load-packages
@@ -311,22 +362,14 @@ library(tidymodels)
 library(yardstick)
 library(pROC)
 tidymodels_prefer()
-
-
 ```
 
-```{r}
-
-```
+Machine learning
 
 ```{r}
 set.seed(1234)
-
 #Preparing training data 
 anxiety <- as.data.frame(anxiety)
-
-
-
 anxiet1 <- anxiety |>
   select(total_SS_cat, gad2_cg_cat, chi11income, c11gender_recode, chd11educ_recode, crl11dcgracehisp_recode, chd11dage, chd11martstat_recode) |>
   drop_na() |>
@@ -335,23 +378,17 @@ anxiet1 <- anxiety |>
   mutate(anxiety = factor(gad2_cg_cat, levels = c(0, 1),
                          labels = c("false", "true"))) 
 anxiet1
-
 anxiety_split <- initial_split(anxiet1, 
                             prop = 0.80)
 anxiety_split
-
 anxiety_train <- training(anxiety_split)
 anxiety_test <- testing(anxiety_split)
-
 anxiety_train
-
 anxiety_train <- anxiety_train |>
   mutate(anxiety = as.factor(anxiety))
-
 lr_cls_spec <- 
   logistic_reg() |> 
   set_engine("glm")
-
 lr_cls_fit <- 
   lr_cls_spec |>
   fit(anxiety ~ ss, data = anxiety_train)
@@ -383,8 +420,6 @@ autoplot(roc_curve(anxiety_glm_cv_preds,
 
 #Overall metrics of CV results
 collect_metrics(glm_fit_cv) # mean_roc_auc = 0.5652078		
-
-
 #Prediction on the test data
 anxiety.lr.pred.values.test <-  bind_cols(
   truth = anxiet1$anxiety,
@@ -402,6 +437,14 @@ metrics(anxiety.lr.pred.values.test, truth, .pred_class, .pred_true)
 #roc_auc = 0.4495781		
 #accuracy = 0.6968085	
 ```
+
+The evaluation of the binary classification model shows that its performance is below expectations across several key metrics. With an accuracy of 69.7%, the model correctly predicted the outcome in nearly 70% of cases. However, accuracy alone does not provide a complete picture of model performance, especially in imbalanced datasets, where a higher accuracy may simply result from predicting the majority class.
+
+The Kappa statistic of 0.0 indicates that there is no better agreement between the predicted and actual labels than what would be expected from random guessing. This implies that the model's predictions lack meaningful predictive power. Furthermore, the mean logarithmic loss of 0.95 highlights the model's deficiencies in generating reliable probabilistic predictions. A higher log loss penalizes incorrect predictions more severely, particularly when the model is overly confident in its mistakes. This suggests that the model’s probability estimates are not well-calibrated.
+
+Additionally, the ROC AUC score of 0.45, which is only slightly above random guessing (0.5), reflects the model’s limited ability to differentiate between classes.
+
+Overall, these results indicate that the model’s predictive capabilities are inadequate and that improvements are necessary. Potential enhancements may include addressing class imbalance, refining feature engineering, optimizing hyperparameters, or exploring more advanced models to improve classification performance and accuracy in probabilistic predictions.
 
 ```{r}
 depress1 <- depression |>
@@ -476,7 +519,8 @@ metrics(anxiety.lr.pred.values.test, truth, .pred_class, .pred_true) #ROC_AUC 0.
 ```
 
 ```{r}
-#SVM- Train the SVM Model. anxiety ~ ss: Specifies that anxiety is the target variable and ss is the predictor variable.
+#SVM- Train the SVM Model. 
+#anxiety ~ ss: Specifies that anxiety is the target variable and ss is the predictor variable.
 
 #Model specification
 svm_spec <- 
@@ -496,7 +540,6 @@ anxiety.svm.pred.values <- bind_cols(
   prob_pred = predict(svm_cls_fit, anxiet1, type = "prob")  # Predicted probabilities
 )
 
-
 roc_auc(anxiety.svm.pred.values, 
         truth, 
         .pred_true)
@@ -507,15 +550,9 @@ anxiety.svm.pred.values <- bind_cols(
 roc_auc(anxiety.svm.pred.values, 
         truth, 
         .pred_true)
-
-
 autoplot(roc_curve(anxiety.svm.pred.values, 
                    truth, 
                    .pred_true))
-
-
-### fit the line again
-
 #Fit on the training data
 svm_cls_fit <- svm_spec |>
   fit(anxiety ~ ss, data = anxiet1)
@@ -527,33 +564,26 @@ anxiety.svm.pred.values <- bind_cols(
   class_pred = predict(svm_cls_fit, anxiet1),  # Predicted class labels (using anxiet1)
   prob_pred = predict(svm_cls_fit, anxiet1, type = "prob")  # Predicted probabilities
 )
-
 # View the resulting predictions
 View(anxiety.svm.pred.values)
-
-
 roc_auc(anxiety.svm.pred.values, 
         truth, 
         .pred_true)
-
-
 anxiety.svm.pred.values <- bind_cols(
   truth = anxiet1$anxiety,  # Actual outcomes
   predict(svm_cls_fit, anxiet1, type = "prob")  # Predicted probabilities
 )
-
-
 roc_auc(
   anxiety.svm.pred.values, 
   truth = truth, 
   .pred_true  
 )
-
 autoplot(roc_curve(anxiety.svm.pred.values, 
                    truth, 
                    .pred_true))
-
 ```
+
+The evaluation of the Support Vector Machine (SVM) model indicates that it is not performing well for the given classification task. The model employs a linear kernel with a cost parameter (C = 1), which is typically used to balance the trade-off between minimizing training error and maintaining a simple, generalizable model. However, the results show limited effectiveness. The training error rate of 30.3% means that approximately one-third of the training samples were misclassified, which is relatively high and reflects poor performance. Additionally, the objective function value of -114 does not indicate an optimal fit for the data. The use of 114 support vectors suggests that the model is relying on a relatively small subset of the training data to define the decision boundary, raising concerns of overfitting or inadequate model specification. The most alarming metric is the ROC AUC score of 0.5, which corresponds to random guessing. An ROC AUC of 0.5 indicates that the model has no distinguishing power between the classes, making predictions no better than chance. This suggests that the linear SVM model is unsuitable for this specific dataset, and further refinement, feature selection, or consideration of alternative algorithms may be necessary to enhance performance.
 
 ```{r}
 svm_workflow <-
@@ -574,19 +604,14 @@ svm_fit_cv |>
   autoplot()
 ```
 
-*#Random forest*
+#Random forest
 
 ```{r}
-
-
-
 rf_spec <- 
   rand_forest(trees = 1000, min_n = 5) |> 
   set_engine("randomForest", importance = TRUE) |>
   set_mode("classification")
 rf_spec
- 
-
 # Train a random forest model
 rf_model <- randomForest(anxiety ~  ss, 
                          data=anxiet1, ntree=100)
@@ -604,30 +629,24 @@ train_control <- trainControl(method = "cv", number = 5)
 # Step 1: Predict probabilities
 rf_probs <- predict(rf_model, newdata = anxiet1, type = "prob")
 
-# Step 2: Compute ROC Curve
+# Compute ROC Curve
 # Assuming anxiet1$ss is the true label and rf_probs[, "positive_class"] gives probabilities for the positive class
 roc_obj <- roc(anxiet1$ss, rf_probs[, "true"])  
-# Step 3: AUC
+# AUC
 auc_value <- auc(roc_obj)
 cat("AUC:", auc_value, "\n")
 
-# Step 4: Plot ROC Curve
+#Plot ROC Curve
 ggroc(roc_obj) +
   ggtitle("ROC Curve for Random Forest Model") +
   xlab("False Positive Rate") +
   ylab("True Positive Rate")
-
-
 anxiet1$ss <- factor(anxiet1$ss, levels = levels(anxiet1$ss))
 
 rf_fit <- rf_spec |>
   fit(anxiety ~ ss, data = anxiet1)
 rf_fit
 
-anxiety.rf.pred.values <- bind_cols(
-  predict(rf_fit, anxiety),
-  predict(rf_fit, anxiety, type = "prob")
-)
 
 anxiety.rf.pred.values <- bind_cols(
   truth = anxiet1$anxiety,  # Actual outcome variable
@@ -637,17 +656,12 @@ anxiety.rf.pred.values <- bind_cols(
 
 # View the resulting predictions
 anxiety.rf.pred.values
-
-
 roc_auc(anxiety.rf.pred.values,
         truth, 
         .pred_false)
-
 autoplot(roc_curve(anxiety.rf.pred.values, 
                    truth, 
                    .pred_true))
-
-
 ### use SS
 
 
@@ -668,30 +682,65 @@ roc_auc(anxiety.rf.pred.values,
 autoplot(roc_curve(anxiety.rf.pred.values, 
                    truth, 
                    .pred_true))
-
+metrics(anxiety.rf.pred.values, truth, .pred_class, .pred_true) #roc_auc = 0.5504219	
 ```
 
 ```{r}
+library(caret)
+#depression
+rf_spec <- 
+  rand_forest(trees = 1000, min_n = 5) |> 
+  set_engine("randomForest", importance = TRUE) |>
+  set_mode("classification")
 
+# Train a random forest model for depression
+rf_model <- randomForest(depression ~ ss, 
+                         data = depress1, ntree = 100)
+
+# Make predictions
+rf_pred <- predict(rf_model, newdata = depress1)
+conf_matrix_rf <- confusionMatrix(rf_pred, depress1$ss)
+
+# Extract Precision, Recall, and F1 Score
+precision_rf <- conf_matrix_rf$byClass["Pos Pred Value"]  # Precision
+recall_rf <- conf_matrix_rf$byClass["Sensitivity"]        # Recall
+f1_score_rf <- 2 * (precision_rf * recall_rf) / (precision_rf + recall_rf)
+cat("F1-score_rf:", f1_score_rf, "\n")  # Print F1 score #F1-score_rf: 0.9037901 
+
+# Predict probabilities
+rf_probs <- predict(rf_model, newdata = depress1, type = "prob")
+
+# Compute ROC Curve
+roc_obj <- roc(depress1$ss, rf_probs[, "true"])  
+auc_value <- auc(roc_obj)
+cat("AUC:", auc_value, "\n")  # Print AUC = AUC: 1 
+
+# Plot ROC Curve
+ggroc(roc_obj) +
+  ggtitle("ROC Curve for Random Forest Model (Depression)") +
+  xlab("False Positive Rate") +
+  ylab("True Positive Rate")
+
+# Prepare the dataset for prediction and evaluation
+depression.rf.pred.values <- bind_cols(
+  truth = depress1$depression,  # Actual outcome variable (true labels)
+  .pred_class = depress1$ss,  # Predicted class labels
+  .pred_true = ss[, "true"],  # Predicted probability for the 'true' class
+  .pred_false = ss[, "false"]  # Predicted probability for the 'false' class
+)
+
+# Print the resulting data frame to check the columns
+print(depression.rf.pred.values)
+
+# Now calculate the metrics
+metrics_result <- metrics(depression.rf.pred.values, truth, .pred_class, .pred_true)
+
+# Print the result of the metrics calculation
+print(metrics_result)
 ```
 
 ```{r}
-rf_fit |>
-  extract_fit_engine() |>
-  importance()
-
-rf_engine <- rf_fit |> extract_fit_engine()
-vip(rf_engine)
-importance_values <- importance(rf_engine)
-
-rf_fit |>
-  extract_fit_engine() |>
-  vip()
-```
-
-```{r}
-#XGBoost
-
+XGBoost
 # Model specification
 bt_spec <- 
   boost_tree(trees = 50,
@@ -738,13 +787,10 @@ xgb.importance(model = bt_object)
 
 ```
 
-```{r}
-system("quarto render final_project_241121.qmd --to html")
-
-```
-
 XGbooster: The analysis shows that `total_SS_cat` is the most important variable, overwhelmingly driving the model's predictive accuracy with the highest gain (99.9%), cover (90.5%), and frequency (57.7%). Secondary variables like `chd11dage` (age) and `chi11income` (income) have moderate importance, contributing to 5% and 2.3% of splits, respectively. In contrast, `c11gender_recode` (gender) and `chd11martstat_recode` (marital status) have minimal impact, with low gain, cover, and frequency (3.8% each), suggesting they may not significantly enhance the model. Future iterations should focus on the dominant role of `total_SS_cat` while reconsidering less impactful variables to streamline the model.
 
-## *Conclusion*
+# Conclusion
+
+@Conclusion
 
 *This the conclusion. The @sec-results can be invoked here.*
