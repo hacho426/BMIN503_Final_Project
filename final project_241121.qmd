@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------
 
 ---
-title: "SDOH of persons with dementia"
+title: "Studying emotional wellbeing of caregivers for persons with dementia"
 subtitle: "BMIN503/EPID600 Final Project"
 author: "Hannah Cho"
 format: html
@@ -10,29 +10,25 @@ number-sections: true
 embed-resources: true
 ---
 
-# *Overview*
+You can find my project repository [here](https://github.com/hacho426/BMIN503_Final_Project/blob/master/final_project_241105.qmd).
 
-*This project aims to investigate which demographic, caregiving social strains, and health-related factors are most predictive of high levels of emotional problems such as anxiety and depression among dementia caregivers. Using data from the National Health and Aging Trends Study (NHATS), I am applying supervised machine learning methods to analyze patterns in social support access among this population. To deepen my approach, I consulted with Drs. Demiris and Huang from the School of Nursing, who provided insights into social determinants of health and their influence on caregiving dynamics, emphasizing the role of socioeconomic factors. You can find my project repository [here](https://github.com/hacho426/BMIN503_Final_Project/blob/master/final_project_241105.qmd).*
+# Introduction
 
-# *Introduction*
+The challenges faced by dementia caregivers are deeply complex and multifaceted, encompassing not only the physical and emotional demands of caregiving but also social physical, and systemic barriers. These challenges are not apply physically demanding- such as providing around-the-clock care, assisting with activities of daily living, and managing the various health complications of dementia- but they also take a significant burden on the caregivers' emotional well-being. Caregivers often experience stress, anxiety, depression, and a sense of isolation, as the demands of caregiving can leave little room for self-care, personal, or social engagement. Among them, caregivers for persons with dementia are put at high risks of anxiety and depression due to the nature of the diseases. The trajectory of dementia is not quietly common and varied based on individuals' pre-exisitng problems and multicomorbidities. In addition to this uncertaintity, caregivers often face sigificant social and systemic barriers that limit their access to essential support services. These barriers include financial strain, a lack of accessible respite care, insufficient knowledge about available resources, and cultural or social stigma associated with caregiving. Many caregivers also experience isolation due to lack of social engagement.
 
-*The challenges faced by dementia caregivers are deeply complex and multifaceted, encompassing not only the physical and emotional demands of caregiving but also social physical, and systemic barriers. These challenges are not apply physically demanding- such as providing around-the-clock care, assisting with activities of daily living, and managing the various health complications of dementia- but they also take a significant burden on the caregivers' emotional well-being. Caregivers often experience stress, anxiety, depression, and a sense of isolation, as the demands of caregiving can leave little room for self-care, personal, or social engagement. Among them, caregivers for persons with dementia are put at high risks of anxiety and depression due to the nature of the diseases. The trajectory of dementia is not quietly common and varied based on individuals' pre-exisitng problems and multicomorbidities. In addition to this uncertaintity, caregivers often face sigificant social and systemic barriers that limit their access to essential support services. These barriers include financial strain, a lack of accessible respite care, insufficient knowledge about available resources, and cultural or social stigma associated with caregiving. Many caregivers also experience isolation due to lack of social engagement.*
+\@ Research Question: Which social strains and sociodemographic characteristics of caregivers most strongly predict anxiety and depression for caregiver of persons with living dementia, and how accurately can supervised machine learning models predict these outcomes?
 
-*\@ Research Question: Which social strains and sociodemographic characteristics of caregivers most strongly predict anxiety and depression for caregiver of persons with living dementia, and how accurately can supervised machine learning models predict these outcomes?*
+# Methods {#sec-methods}
 
-# *Methods* {#sec-methods}
+### Dataset
 
-*Describe the data used and general methodological approach used to address the problem described in the @sec-introduction. Subsequently, incorporate full R code necessary to retrieve and clean data, and perform analysis. Be sure to include a description of code so that others (including your future self) can understand what you are doing and why.*
+This study uses data from the National Health and Aging Trends Study (NHATS) Round 11 and the National Study of Caregiving (NSOC) Round 4, which include data collected in 2021. The NHATS is a publicly accessible dataset that includes a nationally representatative sample of adults aged 65 years old and older who are Medicare beneficiaries in the United States of America. The NSOC is conducted alongside the NHATS; participants in the NSOC are caregivers for older adults included in the NHATS. Both the NHATS and the NSOC were funded by the National Institute on Aging (R01AG062477; U01AG032947). When used together, the NHATS and NSOC provide valuable information on dyads of older adults receiving care and their family caregivers.
 
-*\*Dataset*
+### Samples
 
-*This study uses data from the National Health and Aging Trends Study (NHATS) Round 11 and the National Study of Caregiving (NSOC) Round 4, which include data collected in 2021. The NHATS is a publicly accessible dataset that includes a nationally representatative sample of adults aged 65 years old and older who are Medicare beneficiaries in the United States of America. The NSOC is conducted alongside the NHATS; participants in the NSOC are caregivers for older adults included in the NHATS. Both the NHATS and the NSOC were funded by the National Institute on Aging (R01AG062477; U01AG032947). When used together, the NHATS and NSOC provide valuable information on dyads of older adults receiving care and their family caregivers.^12^*
+1.  Persons with dementia: Probable dementia was identified based on one of the following criteria: a self-reported diagnosis of dementia or Alzheimer’s disease by a physician, a score of 2 or higher on the AD8 screening instrument administered to proxy respondents, or a score that is 1.5 standard deviations below the mean on a range of cognitive tests.
 
-*\*Samples*
-
-1.  *Probable dementia was identified based on one of the following criteria: a self-reported diagnosis of dementia or Alzheimer’s disease by a physician, a score of 2 or higher on the AD8 screening instrument administered to proxy respondents, or a score that is 1.5 standard deviations below the mean on a range of cognitive tests.*
-
-2.  *Caregivers of probable or diagnosed dementia patients were identified from the NSOC and NHATS data set.*
+2.  Caregivers: Caregivers are identified from the NSOC and NHATS data set. Since this project specifically aims to explore caregivers of persons with dementia in the community, the sample was further filtered through dementia classification (demclass) and residency (r11dresid).
 
     ```{r}
     #Afer retriving NHATS Round 11 and NSOC ROUND 4, I specifically selected the sample (from NHATS R11- r11demclas). And then, I merged those necessary datasets. 
@@ -40,18 +36,14 @@ embed-resources: true
     merged_data2 <- left_join(merged_data1, NSOC_cross, by = "spid")
     merged_data3 <- left_join(merged_data2, NSOC_r11,  by = "spid")
 
-    #Since this project specifically aims to explore caregivers of persons with dementia in the community, the sample was further filtered through dementia classification (demclass) and residency (r11dresid).
-
     merged_dementia1 <- merged_data3 |>
       filter(demclas %in% c("1", "2") & (r11dresid  %in% c("1")))
 
     ```
 
-*\*Predictors:*
+Predictors: Caregiver level factors are identified as caregivers' age, race, gender, self-reported income, and the highest education level. Also, these are recoded accordingly. The education level of the caregivers was categorized as "Less than high school (0)”, “High School (1)”, and “College or above (2).” For economic status, the caregivers' reported income from the previous year was used. This study included both informal and formal support as part of the caregivers' social determinants of health. Informal support included having friends or family (a) to talk to about important life matters, (b) to help with daily activities, such as running errands, and (c) to assist with care provision.10 Formal support included (a) participation in a support group for caregivers, (b) access to respite services that allowed the caregiver to take time off, and (c) involvement in a training program that assisted the caregiver in providing care for the care recipient.10 We used these individual items as support questions and each support question was answered by indicating whether or not they received support.
 
 ```{r}
-#Caregiver level factors are identified as caregivers' age, race, gender, self-reported income, and the highest education level. Also, these are recoded accordingly.  The education level of the caregivers was categorized as "Less than high school (0)”, “High School (1)”, and “College or above (2).” For economic status, the caregivers' reported income from the previous year was used. This study included both informal and formal support as part of the caregivers' social determinants of health. Informal support included having friends or family (a) to talk to about important life matters, (b) to help with daily activities, such as running errands, and (c) to assist with care provision.10 Formal support included (a) participation in a support group for caregivers, (b) access to respite services that allowed the caregiver to take time off, and (c) involvement in a training program that assisted the caregiver in providing care for the care recipient.10 We used these individual items as support questions and each support question was answered by indicating whether or not they received support.
-
 # Age
 merged_dementia1$chd11dage 
 #Race
@@ -86,8 +78,6 @@ merged_dementia1 <- merged_dementia1|>
 
 merged_dementia1 <- merged_dementia1[!merged_dementia1$chi11income %in% c(-8, -6, -7, 0), ]
 table(merged_dementia1$chi11income)
-
-
 ## marital status 
 table(merged_dementia1$chd11martstat )
 
@@ -191,11 +181,11 @@ if("pa11prcranoth" %in% colnames(merged_dementia1)) {
 
 ```
 
-*#Outcome*
+### Outcome
 
-```{r}
 #Caregivers' anxiety and depressive symptoms are measured by two questions each.First, anxiety was measured Generalized Anxiety Disorder-2 (GAD-2) Scale which consists of two questions. Since the NHATS provided GAD-2 data, this study utilized it to measure anxiety levels among care recipients. Each item on the scale is rated on a four-point Likert scale, ranging from 0 (not at all) to 3 (nearly every day), resulting in a total score between 0 and 6. Higher scores correspond to greater anxiety, with a total GAD-2 score of 3 or more indicating anxiety. The care recipients' depression was evaluated using the Patient Health Questionnaire-2 (PHQ-2) Scale.17 Given that the NHATS included PHQ-2, this study utilized it to measure depression in care recipients. Each item on the scale was measured with a four-point Likert scale, ranging from 0 (not at all) to 3 (nearly every day), resulting a total score between 0 and 6, with higher scores indicating more severe depression. Depression was defined as a total score of 3 or higher.
 
+```{r}
  # Sum the two questions for GAD2
  merged_dementia1$total_gad2 <- merged_dementia1$che11fltnervs + merged_dementia1$che11fltworry
  
@@ -210,10 +200,9 @@ if("pa11prcranoth" %in% colnames(merged_dementia1)) {
  
 ```
 
-***Data analysis***
+**Data analysis**
 
-*For data analysis, descriptive data analysis such as mean, standard deviations, ranges, and percentages were used. To examine how caregivers' social strains and caregiver level factors influence depression of caregiver, logistic regression analyses were used. Using the conceptual framework of this study as guidance, we conducted a univariate logistic regression analysis to examine which caregivers' social strains and caregiver level factors influence caregiver anxiety and depression, after controlling for care recipient-level factors. Variables with a p-value below 0.05 in the univariate analyses were incorporated into the subsequent multivariate model. Next, we built a multivariate logistic regression model to examine which caregivers' social strains and caregiver level factors influence caregiver anxiety and depression the most. All statistical analyses were conducted using R, and statistical significance was set at p-value less than 0.05.*
-
+For data analysis, descriptive data analysis such as mean, standard deviations, ranges, and percentages were used. To examine how caregivers' social strains and caregiver level factors influence depression of caregiver, logistic regression analyses were used. Using the conceptual framework of this study as guidance, we conducted a univariate logistic regression analysis to examine which caregivers' social strains and caregiver level factors influence caregiver anxiety and depression, after controlling for care recipient-level factors. Variables with a p-value below 0.05 in the univariate analyses were incorporated into the subsequent multivariate model. Next, we built a multivariate logistic regression model to examine which caregivers' social strains and caregiver level factors influence caregiver anxiety and depression the most. All statistical analyses were conducted using R, and statistical significance was set at p-value less than 0.05.
 
 ```{r}
 #univariate logistics
@@ -324,7 +313,7 @@ depression
 
 Results
 
-*Descriptive studies: The mean age of the caregivers was 62.6 ±13.5 (20–95) years. The majority of participants were female (65.9%), high school graduates (52.3%), married or living with a partner (57.8%), and employed (64.4%). Approximately 72% of the care recipients were identified as having probable dementia, whereas 28% were classified as having possible dementia. Many relied on their caregivers for basic activities of daily living and instrumental activities of daily living. Approximately 26% to 29% of care recipients exhibited behavioral and psychological symptoms, such as anxiety or depression.*
+Descriptive studies: The mean age of the caregivers was 62.6 ±13.5 (20–95) years. The majority of participants were female (65.9%), high school graduates (52.3%), married or living with a partner (57.8%), and employed (64.4%). Approximately 72% of the care recipients were identified as having probable dementia, whereas 28% were classified as having possible dementia. Many relied on their caregivers for basic activities of daily living and instrumental activities of daily living. Approximately 26% to 29% of care recipients exhibited behavioral and psychological symptoms, such as anxiety or depression.
 
 ```{r}
 library(ggplot2)
@@ -740,6 +729,7 @@ metrics(anxiety.rf.pred.values, truth, .pred_class, .pred_true) #roc_auc = 0.550
 ```
 
 #cross-validation
+
 ```{r}
 # Set up 5-fold cross-validation
 train_control <- trainControl(method = "cv", number = 5)
@@ -777,7 +767,6 @@ f1_score_rf <- 2 * (precision_rf * recall_rf) / (precision_rf + recall_rf)
 cat("F1-score:", f1_score_rf)
 
 ```
-
 
 ```{r}
 library(caret)
@@ -875,10 +864,6 @@ vip(bt_fit)
 # Variable importance extracted from the xgboost model object
 bt_object <- pull_workflow_fit(bt_fit)$fit
 xgb.importance(model = bt_object)
-
-
-
-
 ```
 
 XGbooster: The analysis shows that `total_SS_cat` is the most important variable, overwhelmingly driving the model's predictive accuracy with the highest gain (99.9%), cover (90.5%), and frequency (57.7%). Secondary variables like `chd11dage` (age) and `chi11income` (income) have moderate importance, contributing to 5% and 2.3% of splits, respectively. In contrast, `c11gender_recode` (gender) and `chd11martstat_recode` (marital status) have minimal impact, with low gain, cover, and frequency (3.8% each), suggesting they may not significantly enhance the model. Future iterations should focus on the dominant role of `total_SS_cat` while reconsidering less impactful variables to streamline the model.
@@ -887,4 +872,4 @@ XGbooster: The analysis shows that `total_SS_cat` is the most important variable
 
 @Conclusion
 
-*This the conclusion. The @sec-results can be invoked here.*
+This the conclusion. The @sec-results can be invoked here.
