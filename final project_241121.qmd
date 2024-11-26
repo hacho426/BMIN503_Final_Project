@@ -214,6 +214,60 @@ if("pa11prcranoth" %in% colnames(merged_dementia1)) {
 
 *For data analysis, descriptive data analysis such as mean, standard deviations, ranges, and percentages were used. To examine how caregivers' social strains and caregiver level factors influence depression of caregiver, logistic regression analyses were used. Using the conceptual framework of this study as guidance, we conducted a univariate logistic regression analysis to examine which caregivers' social strains and caregiver level factors influence caregiver anxiety and depression, after controlling for care recipient-level factors. Variables with a p-value below 0.05 in the univariate analyses were incorporated into the subsequent multivariate model. Next, we built a multivariate logistic regression model to examine which caregivers' social strains and caregiver level factors influence caregiver anxiety and depression the most. All statistical analyses were conducted using R, and statistical significance was set at p-value less than 0.05.*
 
+
+```{r}
+#univariate logistics
+lm_model_univ1 <- glm(phq2_cg_cat ~ total_SS_cat, data = merged_dementia2_sub)
+lm_model_univ2 <- glm(gad2_cg_cat ~ total_SS_cat, data = merged_dementia2_sub)
+summary(lm_model_univ1)
+summary(lm_model_univ2)
+lm_model_univ3 <- glm(phq2_cg_cat ~ pa11hlkepfvst_recode, data = merged_dementia2_sub)
+summary(lm_model_univ3)
+lm_model_univ4 <- glm(phq2_cg_cat ~pa11hlkpfrclb_recode, data = merged_dementia2_sub)
+summary(lm_model_univ4)
+lm_model_univ5 <- glm(phq2_cg_cat ~pa11hlkpgoenj_recode, data = merged_dementia2_sub)
+summary(lm_model_univ5)
+lm_model_univ3a <- glm(gad2_cg_cat ~ pa11hlkepfvst_recode, data = merged_dementia2_sub)
+summary(lm_model_univ3a)
+lm_model_univ4a <- glm(gad2_cg_cat ~pa11hlkpfrclb_recode, data = merged_dementia2_sub)
+summary(lm_model_univ4a) ## significant
+lm_model_univ5a <- glm(gad2_cg_cat ~pa11hlkpgoenj_recode, data = merged_dementia2_sub)
+summary(lm_model_univ5a)
+lm_model_univ6 <- glm(phq2_cg_cat ~pa11hlkpfrwrk_recode, data = merged_dementia2_sub)
+summary(lm_model_univ6)
+lm_model_univ6a <- glm(gad2_cg_cat ~pa11hlkpfrwrk_recode, data = merged_dementia2_sub)
+summary(lm_model_univ6a) ##p=0.1
+lm_model_univ7 <- glm(phq2_cg_cat ~pa11hlkpfrvol_recode, data = merged_dementia2_sub)
+summary(lm_model_univ7)
+lm_model_univ7a <- glm(gad2_cg_cat ~pa11hlkpfrvol_recode, data = merged_dementia2_sub)
+summary(lm_model_univ7a)
+lm_model_univ8 <- glm(phq2_cg_cat ~pa11hlkpfrvol_recode, data = merged_dementia2_sub)
+summary(lm_model_univ8) #p=0.1
+lm_model_univ7a <- glm(gad2_cg_cat ~pa11hlkpfrvol_recode, data = merged_dementia2_sub)
+summary(lm_model_univ7a) #p=0.1
+lm_model_univ8a <- glm(gad2_cg_cat ~chd11educ_recode, data = merged_dementia2_sub)
+summary(lm_model_univ8a)
+lm_model_univ8b <- glm(phq2_cg_cat ~chd11educ_recode, data = merged_dementia2_sub)
+summary(lm_model_univ8b)
+lm_model_univ9a <- glm(gad2_cg_cat ~c11gender_recode, data = merged_dementia2_sub)
+summary(lm_model_univ9a) ##significant
+lm_model_univ9b <- glm(phq2_cg_cat ~c11gender_recode, data = merged_dementia2_sub)
+summary(lm_model_univ9b) 
+lm_model_univ10a <- glm(gad2_cg_cat ~crl11dcgracehisp_recode, data = merged_dementia2_sub)
+summary(lm_model_univ10a) 
+lm_model_univ10b <- glm(phq2_cg_cat ~crl11dcgracehisp_recode, data = merged_dementia2_sub)
+summary(lm_model_univ10b) 
+lm_model_univ11a <- lm(gad2_cg_cat ~chi11income, data = merged_dementia2_sub)
+summary(lm_model_univ11a) 
+lm_model_univ11b <- lm(phq2_cg_cat ~chi11income, data = merged_dementia2_sub)
+summary(lm_model_univ11b) # p= 0.1
+lm_model_univ12a <- lm(gad2_cg_cat ~chd11dage, data = merged_dementia2_sub)
+summary(lm_model_univ11a) 
+lm_model_univ12b <- lm(phq2_cg_cat ~chd11dage, data = merged_dementia2_sub)
+summary(lm_model_univ12b)  
+
+```
+
 ```{r}
 #Create subset data from merged_dementia1
 merged_dementia2_sub <- subset(
