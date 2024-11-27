@@ -395,9 +395,7 @@ dementi1_clean$phq2_cg_cat <- ifelse(dementi1_clean$total_phq2 < 3, 0, 1)
 
 ## *Results* {#sec-results}
 
-*Describe your results and include relevant tables, plots, and code/comments used to obtain them. You may refer to the @sec-methods as needed. End with a brief conclusion of your findings related to the question you set out to address. You can include references if you'd like, but this is not required.*
-
-***Characteristics of Participants***
+***4.1 Characteristics of Participants***
 
 *A total of The mean age of the caregivers was 62.6 ±13.5 (20–95) years. The majority of participants were female (65.9%), high school graduates (52.3%), married or living with a partner (57.8%), and employed (64.4%). Approximately 72% of the care recipients were identified as having probable dementia, whereas 28% were classified as having possible dementia. Many relied on their caregivers for basic activities of daily living and instrumental activities of daily living. Approximately 26% to 29% of care recipients exhibited behavioral and psychological symptoms, such as anxiety or depression.*
 
@@ -522,7 +520,7 @@ ggplot(dementi1_clean %>%
   )
 ```
 
-*Logistic Regression*
+*4.2 Logistic Regression*
 
 ```{r}
 #Create subset data from dementi1_clean
@@ -536,6 +534,31 @@ depression <- subset(
   dementi1_clean,
   select = c(pa11hlkepfvst, pa11hlkpfrclb, pa11hlkpgoenj, pa11hlkpfrwrk, pa11hlkpfrvol, pa11prcranoth, strain_cat, race_recode, gender, edu_recode, chd11dage, chi11income, martial_recode, phq2_cg_cat))
 ```
+
+```{r}
+#Fit the logistic regression model
+anx_model <- glm(
+  gad2_cg_cat ~ pa11hlkepfvst + pa11hlkpfrclb + pa11hlkpgoenj +
+    pa11hlkpfrwrk + pa11hlkpfrvol + pa11prcranoth + strain_cat +
+    race_recode + gender + edu_recode + chd11dage + chi11income +
+    martial_recode,
+  data = dementi1_clean,
+  family = binomial(link = "logit")
+)
+summary(anx_model)
+
+depress_model <- glm(
+  phq2_cg_cat ~ pa11hlkepfvst + pa11hlkpfrclb + pa11hlkpgoenj +
+    pa11hlkpfrwrk + pa11hlkpfrvol + pa11prcranoth + strain_cat +
+    race_recode + gender + edu_recode + chd11dage + chi11income +
+    martial_recode,
+  data = dementi1_clean,
+  family = binomial(link = "logit")
+)
+summary(depress_model)
+```
+
+4.3 Machine Learning Approaches
 
 ```{r}
 #| label: load-packages
@@ -557,9 +580,6 @@ tidymodels_prefer()
 
 ```{r}
 #depression - imputation
-depress2 <- depression |>
-  mutate(across(c(martial_recode, chi11income, chd11dage, race_recode, gender, edu_recode), 
-                ~replace(., is.na(.), 3)))  # change NA to 3
 depression2 <- depression %>%
   mutate(phq2_cg_cat = factor(phq2_cg_cat, levels = c(0, 1), labels = c("false", "true"))) %>%
   filter(!is.na(phq2_cg_cat))  #remove na within phq2 score (one of outcome variables)
@@ -570,28 +590,84 @@ depression2 <- depression2 |>
 ```
 
 ```{r}
+#anxiety - preparing dataset
+anxiety2 <- anxiety |>
+  mutate(gad2_cg_cat = factor(gad2_cg_cat, levels = c(0, 1), labels = c("false", "true"))) %>%
+  filter(!is.na(gad2_cg_cat))  #remove na within phq2 score (one of outcome variables)
 
+anxiety2 <- anxiety2 |>
+  mutate(across(c(martial_recode, chi11income, chd11dage, race_recode, gender, edu_recode), 
+                ~replace(., is.na(.), 3)))  # change NA to 3
 ```
 
-*Anxiety*
+*4.3.1 Anxiety- machine learning*
 
 ```{r}
-#preparing training set
+anxiety_split <- initial_split(anxiety2, 
+                            prop = 0.80)
+anxiety_split
+anxiety_train <- training(anxiety_split)
+anxiety_test <- testing(anxiety_split)
+#283/71/354
 
+lr_cls_spec <- 
+  logistic_reg() |> 
+  set_engine("glm")
 
+lr_cls_fit <- 
+  lr_cls_spec |>
+  fit(gad2_cg_cat ~ ., data = anxiety_train)
 
+#Perform 10-fold cross validation on the training data
+anxiety_folds <- vfold_cv(anxiety_train, v = 10)
+anxiety_folds
+
+#Create a workflow() for fitting the glm
+glm_wf <- workflow() |>
+  add_model(lr_cls_spec) |>
+  add_formula(gad2_cg_cat ~ .)
+  
+#Use workflow to fit model with each fold of resampled data
+glm_fit_cv <- 
+  glm_wf |>
+  fit_resamples(
+    resamples = anxiety_folds, 
+    control = control_resamples(save_pred = TRUE)
+  )
+
+#Collect predictions out of folds into one tibble
+anxiety_glm_cv_preds <- collect_predictions(glm_fit_cv)
+
+#Plot of ROC curve of CV results
+autoplot(roc_curve(anxiety_glm_cv_preds, 
+        gad2_cg_cat, 
+        .pred_true))
+
+#Overall metrics of CV results
+collect_metrics(glm_fit_cv) # mean_roc_auc = 0.5588787					
+#Prediction on the test data
+anxiety.lr.pred.values.test <-  bind_cols(
+  truth = anxiety_test$gad2_cg_cat,
+  predict(lr_cls_fit, anxiety_test),
+  predict(lr_cls_fit, anxiety_test, type = "prob")
+)
+anxiety.lr.pred.values.test
+
+#Plot of ROC curve of prediction on test results
+autoplot(roc_curve(anxiety.lr.pred.values.test, truth, .pred_true))
+
+#Metrics of prediction on test data
+metrics(anxiety.lr.pred.values.test, truth, .pred_class, .pred_true) #ROC_AUC 0.3028846, accuracy 0.6197183			
 ```
 
-*Depression-RF*
+*4.3.2 Depression*
 
 ```{r}
-
 depression_split <- initial_split(depression2, 
                             prop = 0.80)
 depression_split
 depression_train <- training(depression_split)
 depression_test <- testing(depression_split)
-#283/71/354
 
 lr_cls_spec <- 
   logistic_reg() |> 
@@ -643,14 +719,73 @@ autoplot(roc_curve(depression.lr.pred.values.test, truth, .pred_true))
 metrics(depression.lr.pred.values.test, truth, .pred_class, .pred_true) #ROC_AUC 0.4218501	, accuracy 0.6056338		
 ```
 
-```{}
+*4.4. Random forest*
+
+4.4.1 Anxiety
+
+```{r}
+rf_spec <- 
+  rand_forest(trees = 1000, min_n = 5) |> 
+  set_engine("randomForest", importance = TRUE) |>
+  set_mode("classification")
+rf_spec
+# Train a random forest model
+rf_model <- randomForest(gad2_cg_cat ~  ., 
+                         data=anxiety2, ntree=100)
+
+rf_fit <- rf_spec |>
+  fit(gad2_cg_cat ~ ., data = anxiety2)
+rf_fit
+
+#
+rf_workflow <-
+  workflow() |>
+  add_model(rf_spec) |>
+  add_formula(gad2_cg_cat ~ .)
+
+rf_fit_cv <-
+  rf_workflow |>
+  fit_resamples(anxiety_folds, 
+                control = control_resamples(save_pred = TRUE))
+
+collect_metrics(rf_fit_cv) #roc_auc= 0.516	
+
+rf_fit_cv |>
+  collect_predictions() |>
+  roc_curve(gad2_cg_cat, .pred_true) |>
+  autoplot()
+
+
+#
+#10-fold cross validation on rf
+data_anxiety2_folds <- vfold_cv(anxiety2, v = 10)
+
+rf_anxiety_wf <- workflow() |>
+  add_model(rf_spec) |>
+  add_formula(gad2_cg_cat ~ .)
+
+rf_anxiety_wf_fit <- rf_anxiety_wf |>
+  fit(data = anxiety2)
+
+rf_anxiety_wf_fit_cv <-
+  rf_anxiety_wf_fit  |>
+  fit_resamples(data_anxiety2_folds, 
+                control = control_resamples(save_pred = TRUE))
+rf_anxiety_wf_fit_cv
+collect_metrics(rf_anxiety_wf_fit_cv) #roc_auc= 0.4142855	
+
+rf_anxiety_wf_fit_cv |>
+  collect_predictions() |>
+  roc_curve(gad2_cg_cat, .pred_true) |>
+  autoplot()
+
+rf_anxiety_wf_fit_cv_preds <- collect_predictions(rf_anxiety_wf_fit_cv)
 ```
 
-*Random forest*
+4.4.2 Depression
 
 ```{r}
 #Depression
-
 rf_spec <- 
   rand_forest(trees = 1000, min_n = 5) |> 
   set_engine("randomForest", importance = TRUE) |>
@@ -672,24 +807,23 @@ depression.rf.pred.values <- bind_cols(
 
 roc_auc(depression.rf.pred.values,
         truth, 
-        .pred_true)
+        .pred_false)
 
 autoplot(roc_curve(depression.rf.pred.values, 
                    truth, 
-                   .pred_true))
+                   .pred_false))
 
 rf_workflow <-
   workflow() |>
   add_model(rf_spec) |>
   add_formula(phq2_cg_cat ~ .)
 
-set.seed(1234)
 rf_fit_cv <-
   rf_workflow |>
   fit_resamples(depression_folds, 
                 control = control_resamples(save_pred = TRUE))
 
-collect_metrics(rf_fit_cv) #roc_auc= 0.4855333	
+collect_metrics(rf_fit_cv) #roc_auc= 0.4806070			
 
 rf_fit_cv |>
   collect_predictions() |>
@@ -736,10 +870,6 @@ rf_depression_wf_fit_cv |>
 rf_depression_wf_fit_cv_preds <- collect_predictions(rf_depression_wf_fit_cv)
 ```
 
-```{r}
-
-```
-
 *XGBoost*
 
 ```{r}
@@ -782,45 +912,46 @@ autoplot(roc_curve(depression.bt.pred.values, truth, .pred_true))
 vip(bt_fit)
 extract_fit_parsnip(bt_fit)
 
+#anxiety
+
+bt_spec <- 
+  boost_tree(trees = 50,
+             tree_depth = 4) |>
+  set_mode("classification") |>
+  set_engine("xgboost")
+
+# Recipe
+bt_recipe2 <-
+  recipe(gad2_cg_cat ~ ., data = anxiety2) |>
+  step_dummy(all_nominal_predictors()) |>
+  step_normalize(all_predictors())
+
+# Workflow specification
+bt_workflow2 <- workflow() |>
+  add_model(bt_spec) |>
+  add_recipe(bt_recipe2)
+
+# Model fit to the training data
+bt_fit2 <- fit(bt_workflow2, data = anxiety2)
+
+# Predictions (bind truth and predictions)
+anxiety.bt.pred.values <- bind_cols(
+  truth = anxiety2$gad2_cg_cat,
+  predict(bt_fit2, anxiety2),
+  predict(bt_fit2, anxiety2, type = "prob")
+)
+
+# Evaluate model performance (ROC AUC)
+roc_auc(anxiety.bt.pred.values, truth, .pred_true)
+
+# Plot ROC curve
+autoplot(roc_curve(anxiety.bt.pred.values, truth, .pred_true))
+
+# Variable importance using vip
+vip(bt_fit2)
+extract_fit_parsnip(bt_fit2)
 ```
 
-```{r}
-#extra
-
-# Make predictions -> highet F1 score-> we can say that for decision tool,
-
-rf_pred <- predict(rf_model, newdata=depression2)
-conf_matrix_rf <-confusionMatrix(rf_pred, depression2$phq2_cg_cat)
-precision_rf <- conf_matrix_rf$byClass["Pos Pred Value"]  # Precision #0.984
-recall_rf <- conf_matrix_rf$byClass["Sensitivity"]        # Recall #1
-f1_score_rf <- 2 * (precision_rf * recall_rf) / (precision_rf + recall_rf) 
-cat("F1-score_svm:", f1_score_rf)  # F1-score = 0.9919137
-
-#### Set up the trainControl for 5-fold cross-validation
-train_control <- trainControl(method = "cv", number = 5)
-# Step 1: Predict probabilities
-rf_probs <- predict(rf_model, newdata = depression2, type = "prob")
-
-# Compute ROC Curve
-roc_obj <- roc(depression2$phq2_cg_cat, rf_probs[, "true"])  
-
-# Plot the ROC curve
-plot(roc_obj, main = "ROC Curve for Random Forest Model")
-
-# Get AUC value
-auc(roc_obj) 
-
-# AUC
-auc_value <- auc(roc_obj)
-cat("AUC:", auc_value, "\n") #AUC: 0.999984 
-
-#Plot ROC Curve
-ggroc(roc_obj) +
-  ggtitle("ROC Curve for Random Forest Model") +
-  xlab("False Positive Rate") +
-  ylab("True Positive Rate")
-
-```
 
 ## *Conclusion*
 
