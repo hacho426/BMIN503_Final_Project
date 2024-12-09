@@ -1,5 +1,5 @@
 ---
-title: "Predicting Mental Health Problems from Social Determinants and Caregiving Activities of Caregivers of Persons with Dementia: A Machine Learning Approach"
+title: "Predicting Mental Health Problems from Social Determinants of Health and Caregiving Activities of Caregivers of Persons with Dementia: A Machine Learning Approach"
 subtitle: "BMIN503/EPID600 Final Project"
 author: "Hannah Cho"
 format: html
@@ -368,32 +368,6 @@ dementia1 <- dementia1 |>
 
 table(dementia1$martstat_recode)
 
-# Summary and Visualization of 'demclas'
-table(dementia1$demclas) #1 probable dementia #2 dementia diagnosis
-# Adding labels for clarity
-dementia1$demclas_label <- factor(
-  dementia1$demclas, 
-  levels = c(1, 2), 
-  labels = c("Probable Dementia", "Possible Dementia")
-)
-
-# Plotting with the updated legend
-ggplot(dementia1, aes(x = demclas_label)) + 
-  geom_histogram(
-    stat = "count", 
-    color = "blue", 
-    fill = "blue", 
-    alpha = 0.7
-  ) +
-  labs(
-    title = "Distribution of Dementia Classifications",
-    x = "Dementia Class",
-    y = "Count",
-    fill = "Dementia Type"
-  ) +
-  theme_minimal()
-
-
 ```
 
 ```{r}
@@ -595,9 +569,9 @@ ggcorrplot(cor_matrix, method = "circle", type = "lower", lab = TRUE, lab_size =
 
 Pearson's correlation matrices were presented as heatmaps for both rounds (5 and 7) to visually assess the data and evaluate the independence of variables (Supplementary Figure 2a and b). The Pearson's correlation coefficient quantifies the linear relationship between two continuous variables, with values ranging from −1 to +1. A coefficient of 0 indicates no linear correlation, while negative and positive values represent negative and positive correlations, respectively. A p-value of \< .05 was used to define statistical significance. Then I selected the most representative variable to reduce redundancy in concepts among highly correlated items. The negative values in the dataset were not addressed in this step.
 
-### Feature selection
+### Imputation
 
-The original dataset includes numerous negative and N/A values, and the sample size is small, necessitating preprocessing before feature selection. To handle the small sample size, negative values were transformed into N/A values. These N/A values were then imputed based on the type of feature. For continuous variables, N/A values were replaced with the median of the respective column, while the most frequent category level was used to impute N/A values for categorical features.
+The original dataset includes numerous negative and N/A values, and the sample size is small, necessitating preprocessing before feature selection. To handle the small sample size, negative values were transformed into N/A values. These N/A values were then imputed based on the type of feature. For continuous variables, N/A values were replaced with the median of the respective column, while the most frequent category level was used to impute N/A values for categorical features:
 
 che11energylmt, che11health, cac11diffemlv, hc11hosovrnht, marstat_recode, race_recode, mc11havregdoc, gender_recode, cca11hwoftott, ia11totinc, ew11finhlpfam, ew11progneed.
 
@@ -646,21 +620,32 @@ depression <- subset(
 ### Characteristics of Participants
 
 ```{r}
-library(table1)
-#labeling
 
-# Create the table with the correct handling of categorical and continuous variables
-table1(~ race_recode + gender_recode + edu_recode + martstat_recode + chd11dage | demclas, 
-       data = final_dementia,
-       render.categorical = function(x, name, ...) {
-         # Count the categories and calculate percentage
-         count <- table(x)
-         sprintf("%d (%0.1f%%)", count, count / sum(count) * 100)
-       },
-       render.continuous = function(x, name, ...) {
-         # Calculate mean and standard deviation for continuous variable
-         sprintf("%.1f (± %.1f)", mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))
-       })
+# Summary and Visualization of 'demclas'
+table(final$demclas) #1 probable dementia #2 dementia diagnosis
+# Adding labels for clarity
+final$demclas_label <- factor(
+  final$demclas, 
+  levels = c(1, 2), 
+  labels = c("Probable Dementia", "Possible Dementia")
+)
+
+# Plotting with the updated legend
+ggplot(final, aes(x = demclas_label)) + 
+  geom_histogram(
+    stat = "count", 
+    color = "grey", 
+    fill = "grey", 
+    alpha = 0.7
+  ) +
+  labs(
+    title = "Distribution of Dementia Classifications",
+    x = "Dementia Class",
+    y = "Count",
+    fill = "Dementia Type"
+  ) +
+  theme_minimal()
+
 
 ```
 
@@ -677,7 +662,7 @@ final1 <- final_dementia |>
                          labels = c("White, non-Hispanic", "Black, non-Hispanic", "Other", "Hispanic")),
     gender_recode = factor(gender_recode, levels = c("0", "1"),
                            labels = c("Male", "Female")),
-    edu_recode = factor(edu_recode, levels = c("0", "1", "2" ),
+    edu_recode = factor(edu_recode, levels = c("1", "2", "3" ),
                         labels = c("Below high school", "Some college", "College and beyond")),
     martstat_recode = factor(martstat_recode, levels = c("0", "1"),
                              labels = c("Not Married", " Married"))
@@ -727,6 +712,27 @@ ggplot(final1, aes(x = demclas, y = chd11dage, fill = demclas)) +
        y = "Age") +
   scale_fill_brewer(palette = "Set3") + 
   theme_minimal()
+
+library(gtsummary)
+#making table
+summary_table <- final1 |>
+  select(race_recode, gender_recode, edu_recode, martstat_recode, chd11dage) |>
+  tbl_summary(
+    statistic = list(all_continuous() ~ "{mean} ({sd})", all_categorical() ~ "{n} ({p}%)"),
+    label = list(
+      race_recode ~ "Race",
+      gender_recode ~ "Gender",
+      edu_recode ~ "Education",
+      martstat_recode ~ "Marital Status",
+      chd11dage ~ "Age"
+    ),
+    missing_text = "(Missing)"
+  ) |>
+  modify_header(label ~ "**Variable**") |>  
+  bold_labels() 
+
+
+summary_table
 ```
 
 This exploratory study employs multiple machine learning techniques—including correlation matrix analysis, glm, and random forest (RF)—to identify key predictors of caregiver depression and anxiety. This multipronged approach is essential given the diverse types of data in this study. Machine learning methods, being inductive, support hypothesis generation and allow for systematic feature reduction by excluding variables deemed unimportant across multiple methods. This approach refines the feature set, enhancing the interpretability and predictive accuracy of the models.
