@@ -1364,6 +1364,12 @@ coord_equal() +
             color = "purple", size = 2, linetype = "dashed")
 ```
 
+### Data Missing Analysis
+
+```{r}
+
+```
+
 **Limitations**:\
 Despite the robust analysis and promising results, there are several limitations to consider. First, the sample size for both the training and testing sets may not fully capture the diversity of the target population, potentially limiting the generalizability of the findings. Second, while cross-validation helps to reduce overfitting, it does not account for all potential biases or variations within different subgroups of the data. Third, missing data, if not adequately handled, could have introduced bias or reduced the accuracy of model predictions. Furthermore, the models used are based on observed data and may not fully capture complex relationships or interactions that could emerge with a broader set of variables or external factors. Lastly, the reliance on specific features may limit the scope of the model's performance in more dynamic or varied real-world scenarios.
 
