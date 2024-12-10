@@ -386,7 +386,6 @@ dementia1 <- dementia1 |>
   )
 table(dementia1$edu_recode)
 
-
 # Marital Status: Recoding marital status into binary (married vs. not married)
 dementia1 <- dementia1 |>
   mutate(
@@ -403,35 +402,67 @@ table(dementia1$martstat_recode)
 ```
 
 ```{r}
-
 # preparing dataset 
 final_dementia <- dementia1 |> 
-  mutate(
+mutate(
     race_recode = case_when(
-      crl11dcgracehisp == 1 ~ "White, non-Hispanic",
-      crl11dcgracehisp == 2 ~ "Black, non-Hispanic",
-      crl11dcgracehisp == 3 ~ "Other",
-      crl11dcgracehisp == 4 ~ "Hispanic",
+      race_recode == 1 ~ "White, non-Hispanic",
+      race_recode == 2 ~ "Black, non-Hispanic",
+      race_recode == 3 ~ "Other",
+      race_recode == 4 ~ "Hispanic",
       TRUE ~ NA_character_
     ),
     gender_recode = case_when(
-      as.character(c11gender) == "1" ~ "Male",
-      as.character(c11gender) == "2" ~ "Female",
+      gender_recode == "0" ~ "Male",
+      gender_recode == "1" ~ "Female",  
       TRUE ~ NA_character_
-    ),
+    ), 
     edu_recode = case_when(
-      chd11educ %in% c(1, 2, 3) ~ "Below high school",
-      chd11educ %in% c(4, 5) ~ "Some college",
-      chd11educ %in% c(6, 7, 8) ~ "College and beyond",
-      chd11educ == 9 ~ "Unknown",
+      edu_recode == "1" ~ "Below high school",
+      edu_recode == "2" ~ "Some college",
+      edu_recode == "3" ~ "College and beyond",
       TRUE ~ NA_character_
     ),
     martstat_recode = case_when(
-      chd11martstat == 1 ~ "Married",
-      chd11martstat %in% 2:6 ~ "Not married",
+       martstat_recode == "2" ~ "Married",
+      martstat_recode == "1" ~ "Not married",
       TRUE ~ NA_character_
     )
   )
+
+# Dementia class -Adding labels for clarity
+final_dementia$demclas_label <- factor(
+final_dementia$demclas, 
+  levels = c(1, 2), 
+  labels = c("Probable Dementia", "Possible Dementia")
+)
+
+final_dementia <- final_dementia |>
+  group_by(spid) |>
+  slice_head(n = 1) |>
+  ungroup()
+
+#creating table, classfied by group 1 (proable dementia) and group 2 (possible dementia)
+summary_table <- final_dementia |>
+  select(demclas, race_recode, gender_recode, edu_recode, martstat_recode, chd11dage) |>
+  tbl_summary(
+    by = demclas,  
+    statistic = list(all_continuous() ~ "{mean} ({sd})", all_categorical() ~ "{n} ({p}%)"),
+    label = list(
+      race_recode ~ "Race",
+      gender_recode ~ "Gender",
+      edu_recode ~ "Education",
+      martstat_recode ~ "Marital Status",
+      chd11dage ~ "Age"
+    ),
+    missing_text = "(Missing)"
+  ) |>
+  add_p() |>  # adding p-value 
+  modify_header(label ~ "**Variable**") |>  
+  bold_labels()  
+
+# summarize 
+summary_table
 
 ```
 
@@ -621,13 +652,9 @@ depression <- subset(
 
 ## Characteristics of Participants
 
-For the variable "Race," in the first group 'Probable Dementia' (N = 331), 46% (98 individuals) were White, non-Hispanic, 39% (82 individuals) were Black, non-Hispanic, 3.3% (7 individuals) were of another race, and 11% (24 individuals) were Hispanic. There were 120 missing values. In the second group 'Possible Dementia' (N = 232), 61% (54 individuals) were White, non-Hispanic, 31% (28 individuals) were Black, non-Hispanic, 2.2% (2 individuals) were of another race, and 5.6% (5 individuals) were Hispanic. There were 143 missing values. The p-value for this variable is 0.13.
+I prepared the **final_dementia** dataset by recoding several covariates, including race, gender, education, and marital status, to ensure consistency and clarity in the data. Next, I added more descriptive labels for dementia classes to improve interpretability. I also addressed missing and problematic values by converting negative values to **NA** and performing imputation. For continuous variables, I used the median to replace missing values, while for categorical variables, I substituted missing values with the most frequent category.
 
-For the variable "Gender," in the first group, 29% (64 individuals) were male and 71% (155 individuals) were female, with 112 missing values. In the second group, 34% (32 individuals) were male and 66% (61 individuals) were female, with 139 missing values. The p-value for this variable is 0.4.
-
-For the variable "Education," in the first group, 42% (89 individuals) had an education below high school, 45% (96 individuals) had some college education, and 13% (27 individuals) had a college education or beyond. There were 119 missing values. In the second group, 49% (44 individuals) had an education below high school, 41% (37 individuals) had some college education, and 10% (9 individuals) had a college education or beyond. There were 142 missing values. The p-value for this variable is 0.5.
-
-For the variable "Marital Status," in the first group, 47% (74 individuals) were not married and 53% (83 individuals) were married, with 174 missing values. In the second group, 41% (29 individuals) were not married and 59% (41 individuals) were married, with 162 missing values. The p-value for this variable is 0.4. For the variable "Age," the mean age in the first group was 63 years with a standard deviation of 19 years, and there were 112 missing values. In the second group, the mean age was 62 years with a standard deviation of 21 years, and there were 139 missing values. The p-value for this variable is 0.8. The statistical tests used include Fisher’s exact test, Pearson’s Chi-squared test, and the Wilcoxon rank sum test.
+Finally, I generated a summary table that classifies the data by dementia status (Probable Dementia, N = 331 and Possible Dementia, N = 232) and included statistical tests to assess differences between the two groups. The comparison of variables across these groups revealed no significant differences for most of the categories examined. This suggests that, while there may be some variation in the data, the groups do not significantly differ in terms of the demographic and health-related factors assessed in the analysis.
 
 ```{r}
 
@@ -635,15 +662,15 @@ For the variable "Marital Status," in the first group, 47% (74 individuals) were
 final_dementia <- final_dementia |> 
   mutate(
     race_recode = case_when(
-      race_recode == 1 ~ "White, non-Hispanic",
-      race_recode == 2 ~ "Black, non-Hispanic",
-      race_recode == 3 ~ "Other",
-      race_recode == 4 ~ "Hispanic",
+      race_recode == 0 ~ "White, non-Hispanic",
+      race_recode == 1 ~ "Black, non-Hispanic",
+      race_recode == 2 ~ "Other",
+      race_recode == 3 ~ "Hispanic",
       TRUE ~ NA_character_
     ),
     gender_recode = case_when(
-      as.character(gender_recode) == "1" ~ "Male",
-      as.character(gender_recode) == "2" ~ "Female",
+      as.character(gender_recode) == "0" ~ "Male",
+      as.character(gender_recode) == "1" ~ "Female",
       TRUE ~ NA_character_
     ),
     edu_recode = case_when(
@@ -653,8 +680,8 @@ final_dementia <- final_dementia |>
       TRUE ~ NA_character_
     ),
     martstat_recode = case_when(
-      martstat_recode == "2" ~ "Married",
-      martstat_recode == "1" ~ "Not married",
+      martstat_recode == "1" ~ "Married",
+      martstat_recode == "0" ~ "Not married",
       TRUE ~ NA_character_
     )
   )
@@ -665,7 +692,19 @@ final_dementia$demclas,
   levels = c(1, 2), 
   labels = c("Probable Dementia", "Possible Dementia")
 )
+#coverting negative value to NA
+final_dementia[final_dementia < 0] <- NA
 
+#imputation
+continuous_vars <- sapply(final_dementia, is.numeric)  # categorical
+final_dementia[continuous_vars] <- lapply(final_dementia[continuous_vars], function(x) ifelse(is.na(x), median(x, na.rm = TRUE), x))
+
+# categorical: change NA to max
+categorical_vars <- sapply(final_dementia, is.factor)  # find
+final_dementia[categorical_vars] <- lapply(final_dementia[categorical_vars], function(x) {
+  levels(x) <- append(levels(x), names(sort(table(x), decreasing = TRUE))[1])  
+  ifelse(is.na(x), names(sort(table(x), decreasing = TRUE))[1], x)  
+})
 #creating table, classfied by group 1 (proable dementia) and group 2 (possible dementia)
 summary_table <- final_dementia |>
   select(demclas, race_recode, gender_recode, edu_recode, martstat_recode, chd11dage) |>
@@ -690,7 +729,7 @@ summary_table
 
 ```
 
-This exploratory study employs multiple machine learning techniques—including correlation matrix analysis, glm, and random forest (RF)—to identify key predictors of caregiver depression and anxiety. This multipronged approach is essential given the diverse types of data in this study. Machine learning methods, being inductive, support hypothesis generation and allow for systematic feature reduction by excluding variables deemed unimportant across multiple methods. This approach refines the feature set, enhancing the interpretability and predictive accuracy of the models.
+The table shows the distribution of variables by group, with p-values indicating statistical significance. For **Race**, the distribution differed significantly between the two groups (p = 0.005), with more Black, non-Hispanic individuals in group 2 (possible dementia group). **Gender** did not show a significant difference (p = 0.085), but there was a notable difference in **Education** (p = 0.005) with more individuals having a some college education in group 2. Both **Marital Status** (p = 0.003) and **Age** (p = 0.2) showed differences, but only **Marital Status** was statistically significant.
 
 ## Logistic regression
 
@@ -1303,15 +1342,21 @@ coord_equal() +
 
 ## Implication
 
-The implications of this study highlight the significant factors contributing to anxiety and depression among caregivers. By identifying key predictors such as caregivers' feelings of exhaustion, lack of energy, difficulty with physical help, sleep issues, and health problems, the study highlighted the multifaceted challenges faced by caregivers. Additionally, the discovery that caregiver's age is a significant predictor of depression provides new insights for targeted interventions.
+The implications of this study emphasize the critical factors contributing to anxiety and depression among caregivers, with a focus on key predictors such as caregivers' feelings of exhaustion, lack of energy, difficulty with physical help, sleep issues, and health problems. These factors highlight the multifaceted challenges faced by caregivers. Additionally, the discovery that caregiver age is a significant predictor of depression opens new avenues for targeted interventions aimed at improving caregiver mental health.
 
-Given that this was an exploratory study, the findings serve as a foundation for future research. Future studies should aim to validate these results with larger and more diverse samples, and explore the underlying mechanisms driving these associations. Longitudinal studies are particularly valuable as they can track changes over time, offering insights into how these factors evolve and their long-term impact on caregivers. Since the NHATS (National Health and Aging Trends Study) and NSOC (National Study of Caregiving) are longitudinal studies, obtaining the next round of data from these sources will be crucial. This will allow for a more comprehensive analysis and help in identifying trends and patterns that can inform targeted interventions and support programs for caregivers.
+This research aimed to identify these key predictors and evaluate the predictive accuracy of machine learning algorithms in supporting the early identification of at-risk caregivers. By leveraging advanced techniques, we can enhance early detection, enabling more timely interventions to mitigate mental health risks.
 
-Overall, this exploratory research paves the way for more comprehensive investigations and the development of tailored support programs to improve the well-being of caregivers.
+Given that this is an exploratory study, the findings serve as a foundation for future research. Future studies should aim to validate these results with larger, more diverse samples and further explore the underlying mechanisms driving these associations. Longitudinal studies are particularly valuable as they can track changes over time, providing insights into how these factors evolve and their long-term impact on caregivers' mental health. The use of longitudinal data, such as that from the **National Health and Aging Trends Study (NHATS)** and the **National Study of Caregiving (NSOC)**, will be essential for identifying trends and patterns, enabling a more comprehensive analysis and improving support programs for caregivers.
+
+For future work, I hope to further refine the model by applying a more diverse set of feature selection techniques. This will help identify the most relevant predictors of caregiver mental health outcomes, allowing for a more streamlined and interpretable model. Techniques such as recursive feature elimination (RFE), LASSO (Least Absolute Shrinkage and Selection Operator), or tree-based feature importance methods can help narrow down the feature space, ensuring that only the most significant variables are included in the final model.
+
+By reducing the number of features, the model could potentially improve in performance, interpretability, and generalizability. In addition, focusing on key variables will enable a deeper understanding of the specific factors that most strongly influence caregiver mental health, which could be critical for developing more targeted interventions.
+
+I also plan to explore the interaction effects between selected features, as these interactions might uncover more nuanced relationships that single predictors alone cannot capture. Combining these advanced feature selection techniques with longitudinal data will also allow us to track the impact of specific factors over time and adjust the model accordingly.
 
 **Limitations**:\
-Despite the robust analysis and promising results, there are several limitations to consider. First, the sample size for both the training and testing sets may not fully capture the diversity of the target population, potentially limiting the generalizability of the findings. Second, while cross-validation helps to reduce overfitting, it does not account for all potential biases or variations within different subgroups of the data. Third, missing data, if not adequately handled, could have introduced bias or reduced the accuracy of model predictions. Furthermore, the models used are based on observed data and may not fully capture complex relationships or interactions that could emerge with a broader set of variables or external factors. Lastly, the reliance on specific features may limit the scope of the model's performance in more dynamic or varied real-world scenarios.
+Despite the promising results, this study has several limitations. The sample size for both the training and testing sets may not fully capture the diversity of the target population, limiting the generalizability of the findings. While cross-validation reduces overfitting, it does not account for all potential biases or variations within different subgroups. Additionally, missing data, if not properly addressed, could introduce bias or reduce model accuracy. The models used are based on observed data and may not fully capture complex relationships that could emerge with a broader set of variables or external factors. Finally, the reliance on specific features may limit the model's performance in more dynamic real-world scenarios.
 
 # Conclusion
 
-This exploratory study highlights the critical factors influencing anxiety and depression among caregivers, providing a foundation for future research and targeted interventions. Further validation and longitudinal studies are needed to deepen our understanding and support the well-being of caregivers.
+This exploratory study provides valuable insights into the critical factors influencing anxiety and depression among caregivers and lays the groundwork for future research aimed at improving caregiver mental health. By identifying the key predictors of mental health outcomes and evaluating the predictive power of machine learning algorithms, the study highlights the potential for early identification and intervention for at-risk caregivers. Further validation, particularly through longitudinal studies, is essential to deepen our understanding and inform the development of tailored interventions to support the well-being of caregivers in the long term.
