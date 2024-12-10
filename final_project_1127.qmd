@@ -36,6 +36,7 @@ embed-resources: true
 #Install necessary packages first.
 library(haven) #for dta file
 library(dplyr) 
+library(tidyverse)
 library(ggplot2) #for data visualization 
 #Bring datasets 
 df1 <- read_dta("~/R  HC/BMIN503_Final_Project/final final/NHATS_Round_11_SP_File_V2.dta") # dementia classfication in this file
@@ -60,26 +61,26 @@ sp1 <- sp1 |>
   rename_all(~stringr::str_replace(.,"^cg11",""))
 
 #ADD R1DAD8DEM AND SET TO -1 FOR ROUND 1 BECAUSE THERE IS NO PRIOR DIAGNOSIS IN R1
-sp1 <- sp1 %>% 
+sp1 <- sp1 |>
   mutate(dad8dem = ifelse(rnd == 1, -1, dad8dem))
 
 
 #ADD R1DAD8DEM AND SET TO -1 FOR ROUND 1 BECAUSE THERE IS NO PRIOR DIAGNOSIS IN R1
-sp1 <- sp1 %>% 
+sp1 <- sp1 |>
   mutate(dad8dem = ifelse(rnd == 1, -1, dad8dem))
 
 #SUBSET NEEDED VARIABLES
-df<-sp1 %>% 
+df<-sp1 |> 
   dplyr::select(spid, rnd, dresid, resptype, disescn9, chgthink1, chgthink2, chgthink3, chgthink4, chgthink5, chgthink6, chgthink7, chgthink8, dad8dem,
                 speaktosp, todaydat1, todaydat2, todaydat3, todaydat4, todaydat5, presidna1, presidna3, vpname1, vpname3, quesremem, dclkdraw, atdrwclck, 
                 dwrdimmrc, dwrdlstnm, dwrddlyrc)
 
 #FIX A ROUND 2 CODING ERROR#
-df <- df %>%
+df <- df |>
   mutate(dwrdimmrc = ifelse(dwrdimmrc==10 & dwrddlyrc==-3 & rnd==2, -3, dwrdimmrc))
 
 #CREATE SELECTED ROUND DEMENTIA CLASSIFICATION VARIABLE 
-df <- df %>%
+df <- df |>
   mutate(demclas  =  ifelse(dresid==3 | dresid==5 | dresid==7, -9, #SET MISSING (RESIDENTIAL CARE FQ ONLY) AND N.A. (NURSING HOME RESIDENTS, DECEASED)
                             ifelse((dresid==4 & rnd==1) | dresid==6 | dresid==8, -1,                #SET MISSING (RESIDENTIAL CARE FQ ONLY) AND N.A. (NURSING HOME RESIDENTS, DECEASED)
                                    ifelse((disescn9==1 | disescn9==7) &           #CODE PROBABLE IF DEMENTIA DIAGNOSIS REPORTED BY SELF OR PROXY*
@@ -91,7 +92,7 @@ df <- df %>%
 for(i in 1:8){
   df[[paste("ad8_", i, sep = "")]]  <- as.numeric(ifelse(df[[paste("chgthink", i, sep = "")]]==2 & df$resptype==2 & is.na(df$demclas), 0, #PROXY REPORTS NO CHANGE
                                                          ifelse((df[[paste("chgthink", i, sep = "")]]==1 | df[[paste("chgthink", i, sep = "")]] == 3) & df$resptype==2 & is.na(df$demclas), 1, #PROXY REPORTS A CHANGE OR ALZ/DEMENTIA*
-                                                                ifelse(df$resptype==2 & is.na(df$demclas), NA, -1))))    #SET TO NA IF IN RES CARE AND demclass=., OTHERWISE AD8 ITEM IS SET TO NOT APPLICABLE                                                                                                                        
+                                                                ifelse(df$resptype==2 & is.na(df$demclas), NA, -1))))    #SET TO NA IF IN RES CARE AND demclass=., OTHERWISE AD8 ITEM IS SET TO NOT APPLICABLE                                           
 }
 
 #INITIALIZE COUNTS TO NOT APPLICABLE*
@@ -106,7 +107,7 @@ for(i in 1:8){
 
 #COUNT AD8 ITEMS
 #ROUNDS 2+
-df <- df %>%
+df <- df |>
   mutate(ad8_score = ifelse(resptype==2 & is.na(demclas), (ad8_1 + ad8_2 + ad8_3 + ad8_4 + ad8_5 + ad8_6 + ad8_7 + ad8_8), -1)) %>% 
   #SET PREVIOUS ROUND DEMENTIA DIAGNOSIS BASED ON AD8 TO AD8_SCORE=8 
   mutate(ad8_score = ifelse(dad8dem==1 & resptype==2 & is.na(demclas), 8, ad8_score))  %>% 
@@ -114,23 +115,22 @@ df <- df %>%
   mutate(ad8_score = ifelse(resptype==2 & dad8dem==-1 & chgthink1==-1 & (rnd>=4 & rnd<=9) & is.na(demclas) , 8, ad8_score)) 
 
 #COUNT MISSING AD8 ITEMS
-df <- df %>% 
+df <- df |> 
   mutate(ad8_miss = ifelse(resptype==2 & is.na(demclas),(ad8miss_1+ad8miss_2+ad8miss_3+ad8miss_4+ad8miss_5+ad8miss_6+ad8miss_7+ad8miss_8), -1))
 
 #CODE AD8 DEMENTIA CLASS 
 #IF SCORE>=2 THEN MEETS AD8 CRITERIA
 #IF SCORE IS 0 OR 1 THEN DOES NOT MEET AD8 CRITERIA
-df <- df %>% 
+df <- df |> 
   mutate(ad8_dem = ifelse(ad8_score>=2, 1,
                           ifelse(ad8_score==0 | ad8_score==1 | ad8_miss==8, 2, NA)))
 
 #UPDATE DEMENTIA CLASSIFICATION VARIABLE WITH AD8 CLASS
-df <- df %>% 
+df <- df |> 
   #PROBABLE DEMENTIA BASED ON AD8 SCORE  
   mutate(demclas = ifelse(ad8_dem==1 & is.na(demclas), 1, 
                           #NO DIAGNOSIS, DOES NOT MEET AD8 CRITERION, AND PROXY SAYS CANNOT ASK SP COGNITIVE ITEMS*
                           ifelse(ad8_dem==2 & speaktosp==2 & is.na(demclas), 3, demclas)))
-
 
 ####CODE DATE ITEMS AND COUNT 
 #CODE ONLY YES/NO RESPONSES: MISSING/NA CODES -1, -9 LEFT MISSING*
@@ -143,9 +143,9 @@ for(i in 1:5){
 }
 
 #COUNT CORRECT DATE ITEMS
-df <- df %>% 
-  mutate(date_item4 = ifelse(rnd==4, date_item5, date_item4)) %>% 
-  mutate(date_sum = date_item1 + date_item2 + date_item3 + date_item4) %>% 
+df <- df |> 
+  mutate(date_item4 = ifelse(rnd==4, date_item5, date_item4)) |> 
+  mutate(date_sum = date_item1 + date_item2 + date_item3 + date_item4) |> 
   
   #PROXY SAYS CAN'T SPEAK TO SP
   mutate(date_sum = ifelse(speaktosp==2 & is.na(date_sum),-2,  
@@ -157,30 +157,29 @@ df <- df %>%
                             #0 IF SP UNABLE TO ANSWER*
                             ifelse(date_sum == -3 , 0, date_sum)))
 
-
 ########PRESIDENT AND VICE PRESIDENT NAME ITEMS AND COUNT########## 
 ##CODE ONLY YES/NO RESPONSES: MISSING/N.A. CODES -1,-9 LEFT MISSING *
 ##2:NO/DK OR -7:REFUSED RECODED TO 0:NO/DK/RF*
-df <- df %>% 
+df <- df |> 
   mutate(preslast = ifelse(presidna1 == 1, 1,
-                           ifelse(presidna1 == 2 | presidna1 == -7, 0, NA))) %>% 
+                           ifelse(presidna1 == 2 | presidna1 == -7, 0, NA))) |> 
   mutate(presfirst = ifelse(presidna3 == 1, 1,
-                            ifelse(presidna3 == 2 | presidna3 == -7, 0, NA))) %>% 
+                            ifelse(presidna3 == 2 | presidna3 == -7, 0, NA))) |> 
   mutate(vplast = ifelse(vpname1 == 1, 1,
-                         ifelse(vpname1 == 2 | vpname1 == -7, 0, NA))) %>% 
+                         ifelse(vpname1 == 2 | vpname1 == -7, 0, NA))) |> 
   mutate(vpfirst = ifelse(vpname3 == 1, 1,
-                          ifelse(vpname3 == 2 | vpname3 == -7, 0, NA))) %>% 
+                          ifelse(vpname3 == 2 | vpname3 == -7, 0, NA))) |> 
   
   #COUNT CORRECT PRESIDENT/VP NAME ITEMS*
-  mutate(presvp = preslast + presfirst + vplast + vpfirst) %>% 
+  mutate(presvp = preslast + presfirst + vplast + vpfirst) |> 
   #PROXY SAYS CAN'T SPEAK TO SP 
   mutate(presvp = ifelse(speaktosp == 2 & is.na(presvp), -2, 
                          #PROXY SAYS CAN SPEAK TO SP BUT SP UNABLE TO ANSWER                           
-                         ifelse((is.na(preslast) | is.na(presfirst) | is.na(vplast) | is.na(vpfirst)) & speaktosp==1 & is.na(presvp),-3, presvp))) %>% 
+                         ifelse((is.na(preslast) | is.na(presfirst) | is.na(vplast) | is.na(vpfirst)) & speaktosp==1 & is.na(presvp),-3, presvp))) |> 
   
   #MISSING IF PROXY SAYS CAN’T SPEAK TO SP*
   mutate(presvpr =  ifelse(presvp == -2 , NA, 
-                           ifelse(presvp == -3 , 0, presvp))) %>% 
+                           ifelse(presvp == -3 , 0, presvp))) |> 
   
   #ORIENTATION DOMAIN: SUM OF DATE RECALL AND PRESIDENT/VP NAMING* 
   mutate(date_prvp = date_sumr + presvpr)
@@ -188,17 +187,17 @@ df <- df %>%
 
 #######EXECUTIVE FUNCTION DOMAIN: CLOCK DRAWING SCORE##########
 #RECODE DCLKDRAW TO ALIGN WITH MISSING VALUES IN PREVIOUS ROUNDS (ROUND 10 ONLY)* 
-df <- df %>% 
+df <- df |> 
   mutate(dclkdraw = ifelse(speaktosp == 2 & dclkdraw == -9 & rnd==10, -2,
                            ifelse(speaktosp==1 & (quesremem==2 | quesremem==-7 | quesremem==-8) & dclkdraw==-9 & rnd==10, -3,
                                   ifelse(atdrwclck==2 & dclkdraw==-9 & rnd==10, -4,
                                          ifelse(atdrwclck==97 & dclkdraw==-9 & rnd==10, -7, dclkdraw)))))
 
 #RECODE DCLKDRAW TO ALIGN WITH MISSING VALUES IN PREVIOUS ROUNDS (ROUNDS 11 AND FORWARD ONLY)* 
-df<-df  %>%
+df<-df  |>
   mutate(dclkdraw = ifelse(speaktosp == 2 & dclkdraw == -9 & rnd>=11, -2, 
                            ifelse(speaktosp == 1 & (quesremem == 2 | quesremem == -7 | quesremem == -8) & dclkdraw == -9, -3 & rnd>=11, dclkdraw))) 
-df<-df  %>%
+df<-df  |>
   mutate(clock_scorer = ifelse(dclkdraw == -3 | dclkdraw == -4 | dclkdraw == -7, 0,
                                #IMPUTE MEAN SCORE TO PERSONS MISSING A CLOCK*
                                #IF PROXY SAID CAN ASK SP*
@@ -209,42 +208,36 @@ df<-df  %>%
 
 
 #MEMORY DOMAIN: IMMEDIATE AND DELAYED WORD RECALL 
-df <- df %>%
+df <- df |>
   mutate(irecall  =  ifelse(dwrdimmrc == -2 | dwrdimmrc == -1, NA,
                             ifelse(dwrdimmrc == -7 | dwrdimmrc == -3, 0, dwrdimmrc))) %>% 
-  mutate(irecall = ifelse(rnd==5 & dwrddlyrc==-9, NA, irecall)) %>%  #round 5 only: set cases with missing word list and not previously assigned to missing
+  mutate(irecall = ifelse(rnd==5 & dwrddlyrc==-9, NA, irecall)) |>  #round 5 only: set cases with missing word list and not previously assigned to missing
   
   mutate(drecall  =  ifelse(dwrddlyrc == -2 | dwrddlyrc == -1, NA,
                             ifelse(dwrddlyrc == -7 | dwrddlyrc == -3, 0, dwrddlyrc))) %>% 
-  mutate(drecall = ifelse(rnd==5 & dwrddlyrc==-9, NA, drecall)) %>%  #round 5 only: set cases with missing word list and not previously assigned to missing
+  mutate(drecall = ifelse(rnd==5 & dwrddlyrc==-9, NA, drecall)) |>  #round 5 only: set cases with missing word list and not previously assigned to missing
   
   mutate(wordrecall0_20 = irecall+drecall)
 
-
 #CREATE COGNITIVE DOMAINS FOR ALL ELIGIBLE 
-
-df<-df %>% 
+df<-df |> 
   mutate(clock65 = ifelse(clock_scorer == 0 | clock_scorer==1, 1, 
                           ifelse(clock_scorer > 1 & clock_scorer<6, 0, NA)))
 
-df<-df %>%  
+df<-df |>  
   mutate(word65 = ifelse(wordrecall0_20 >= 0 & wordrecall0_20 <=3, 1, 
                          ifelse(wordrecall0_20 > 3 & wordrecall0_20 <=20, 0, NA)))
 
-df<-df %>%  
+df<-df |>  
   mutate(datena65 = ifelse(date_prvp >= 0 & date_prvp <=3, 1, 
                            ifelse(date_prvp > 3 & date_prvp <= 8, 0, NA)))
 
 #  *CREATE COGNITIVE DOMAIN SCORE*
-df<-df %>% 
+df<-df |> 
   mutate(domain65 = clock65+word65+datena65)
 
-#*SET CASES WITH MISSING WORD LIST AND NOT PREVIOUSLY ASSIGNED TO MISSING (ROUND 5 ONLY)
-df<-df %>%   
-  mutate(demclas = ifelse(rnd==5 & dwrdlstnm==-9 & is.na(demclas), -9, demclas))
-
 #UPDATE COGNITIVE CLASSIFICATION*
-df<-df %>% 
+df<-df |>
   #PROBABLE DEMENTIA
   mutate(demclas = ifelse(is.na(demclas) & (speaktosp == 1 | speaktosp == -1) & (domain65==2 | domain65==3), 1,
                           #POSSIBLE DEMENTIA
@@ -253,7 +246,7 @@ df<-df %>%
                                  ifelse(is.na(demclas) & (speaktosp == 1 | speaktosp == -1) & domain65==0, 3, demclas))))
 
 #KEEP VARIABLES AND SAVE DATA
-df<-df %>% 
+df<-df |>
   dplyr::select(spid, rnd, demclas)
 
 #CHANGE # AFTER "r" TO THE ROUND OF INTEREST
@@ -269,12 +262,14 @@ save(r11demclas, file = "~/R  HC/BMIN503_Final_Project/final final/NHATS_r11.dta
 #merged datasets (md). 
 md1 <- left_join(df, df1, by = "spid")
 md2 <- left_join(md1, df3, by = "spid")
-
 md3 <- left_join(md2, df4,  by = "spid") # might not use it 
 
 # choose probable dementia and dementia patients who live at home
 dementia1 <- md2 |>
   filter(demclas %in% c("1", "2") & (r11dresid  %in% c("1")))
+
+dementia2 <- md3 |>
+  filter(demclas %in% c("1", "2"))
 ```
 
 ***Predictors**: Caregiver level factors are identified as caregivers' age, race, gender, self-reported income, and the highest education level. Also, these are recoded accordingly. The education level of the caregivers was categorized as "Less than high school (0)”, “High School (1)”, and “College or above (2).” For economic status, the caregivers' reported income from the previous year was used. This study included both informal and formal support as part of the caregivers' social determinants of health. Informal support included having friends or family (a) to talk to about important life matters, (b) to help with daily activities, such as running errands, and (c) to assist with care provision.10 Formal support included (a) participation in a support group for caregivers, (b) access to respite services that allowed the caregiver to take time off, and (c) involvement in a training program that assisted the caregiver in providing care for the care recipient.10 We used these individual items as support questions and each support question was answered by indicating whether or not they received support.*
@@ -330,13 +325,16 @@ dementia1 <- dementia1 |>
 
 ```
 
+```         
+```
+
 *Caregiver's social strains - binary questions (Y/N). In the last month, did helping the recipient ever keep you from: 1) visiting in person with friends or family not living with you? 2) participating in club meetings or group activities? 3) going out for enjoyment? 4) working for pay? 5) doing volunteer work? 6) providing care for a child or other adult?*
 
 ```{r}
 #recoding caregivers' social strain questions 
 recode_column <- function(data, column, new_column) {
   if (column %in% colnames(data)) {
-    data <- data %>%
+    data <- data |>
       mutate(!!sym(new_column) := case_when(
         !!sym(column) == 1 ~ 1,  # Map 1 to 1
         !!sym(column) == 2 ~ 0,  # Map 2 to 0
@@ -362,12 +360,19 @@ for (col in columns_to_recode) {
 }
 
 # Calculate total_strains
-dementi1_clean <- dementi1_clean %>%
+dementi1_clean <- dementi1_clean |>
   mutate(strain = rowSums(select(., ends_with("_recode")), na.rm = TRUE))
 
+dementi1_clean <- dementi1_clean |>
+  mutate(strain = rowSums(select(.data, ends_with("_recode")), na.rm = TRUE))
+
+
 # Categorize strain into strain with a cutoff of 2
-dementi1_clean <- dementi1_clean %>%
+dementi1_clean <- dementi1_clean |>
   mutate(strain_cat = ifelse(strain < 2, 0, 1)) #0~no, #1 yes
+
+selected_cols <- select(dementi1_clean, ends_with("_recode"))
+head(selected_cols)
 ```
 
 ***Outcomes**: Caregivers' anxiety and depressive symptoms are measured by two questions each.First, anxiety was measured Generalized Anxiety Disorder-2 (GAD-2) Scale which consists of two questions. Since the NHATS provided GAD-2 data, this study utilized it to measure anxiety levels among care recipients. Each item on the scale is rated on a four-point Likert scale, ranging from 0 (not at all) to 3 (nearly every day), resulting in a total score between 0 and 6. Higher scores correspond to greater anxiety, with a total GAD-2 score of 3 or more indicating anxiety.*
@@ -397,9 +402,10 @@ dementi1_clean$phq2_cg_cat <- ifelse(dementi1_clean$total_phq2 < 3, 0, 1)
 
 ***4.1 Characteristics of Participants***
 
-*A total of The mean age of the caregivers was 62.6 ±13.5 (20–95) years. The majority of participants were female (65.9%), high school graduates (52.3%), married or living with a partner (57.8%), and employed (64.4%). Approximately 72% of the care recipients were identified as having probable dementia, whereas 28% were classified as having possible dementia. Many relied on their caregivers for basic activities of daily living and instrumental activities of daily living. Approximately 26% to 29% of care recipients exhibited behavioral and psychological symptoms, such as anxiety or depression.*
+*A total of The mean age of the caregivers was 62.6 ±13.5 (20–95) years. The majority of participants were female (65.9%), high school graduates (52.3%), married or living with a partner (57.8%), and employed (64.4%). Approximately 72% of the care recipients were identified as having probable dementia, whereas 28% were classified as having possible dementia.*
 
 ```{r}
+
 # Summary and Visualization of 'demclas'
 table(dementi1_clean$demclas) #1 probable dementia #2 dementia diagnosis
 
@@ -951,7 +957,6 @@ autoplot(roc_curve(anxiety.bt.pred.values, truth, .pred_true))
 vip(bt_fit2)
 extract_fit_parsnip(bt_fit2)
 ```
-
 
 ## *Conclusion*
 
