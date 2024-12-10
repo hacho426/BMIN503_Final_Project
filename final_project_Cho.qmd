@@ -48,11 +48,35 @@ Afer retriving NHATS Round 11 and NSOC ROUND 4, I specifically selected the samp
 
 ```{r}
 #Loading necessary packages first.
+#| label: load-packages
+#| include: false
 library(haven) #dta file
 library(dplyr) #data cleaning
 library(ggplot2) #data visualization 
 library(gtsummary) #summary statistics
+library(Hmisc) #Pearson correlation coefficient
+library(tibble) 
+library(kernlab)
+library(randomForest)
+library(glmnet)
+library(xgboost)
+library(vip)
+library(tidymodels)
+library(yardstick)
+library(pROC)
+library(lattice)
+library(caret)
+library(broom)
+library(tune)
+library(parsnip)
+library(recipes)
+library(rsample)
+library(workflows)
+tidymodels_prefer()
 
+```
+
+```{r}
 #Bring datasets 
 df1 <- read_dta("~/R  HC/BMIN503_Final_Project/final final/NHATS_Round_11_SP_File_V2.dta") # dementia classfication in this file
 df2 <- read_dta("~/R  HC/BMIN503_Final_Project/final final/NSOC_r11.dta") #caregiver information 1
@@ -61,6 +85,8 @@ df4 <- read_dta("~/R  HC/BMIN503_Final_Project/final final/NHATS_Round_11_OP_Fil
 ```
 
 ## Choosing Probable and Possible Dementia Participants
+
+Based on NHATS/NOSC researchers, there was published algorithm that I can utilized to choose probable and possible dementia participants.
 
 ```{r}
 #need to clean df1 first in order to classify dementia classes  
@@ -309,149 +335,81 @@ Before creating the subset of the dataset for analysis, I will recode the variab
 
 ```{r}
 
-# Caregiver's Age #chd11dage
-
-#Race
-# Recode `race` to create a new binary variable
-# 1 for "White, non-Hispanic" and 0 for "Non-White"
-# Recode race to create a new variable 'race_recode'
-dementia1 <- dementia1 |>
+# Preparing dataset - recoding some covariates without labels
+dementia1 <- dementia1 |> 
   mutate(
     race_recode = case_when(
-      crl11dcgracehisp == 1 ~ 0,  # White, non-Hispanic
-      crl11dcgracehisp == 2 ~ 1, #black, non-hispanic
-      crl11dcgracehisp == 3 ~ 2,  # others
-      crl11dcgracehisp == 4 ~ 3,
-      chd11educ %in% c(5, 6) ~ NA_real_, # Missing or not applicable
-      TRUE ~ NA_real_                      # Unhandled cases# hispanics
-    ))  
-
-table(dementia1$crl11dcgracehisp)
-table(dementia1$race_recode)
-
-# Gender: Male as reference (0), Female as 1
-dementia1 <- dementia1 |>
-  mutate(
-    gender_recode = case_when(
-      as.character(c11gender) == "1" ~ 0,  # Male
-      as.character(c11gender) == "2" ~ 1,  # Female
-      TRUE ~ NA_real_  # Handle any other unexpected cases
-    )
-  )
-
-# Education: Recoding education levels into two categories
-table(dementia1$chd11educ)
-dementia1 <- dementia1 |>
-  mutate(
-    edu_recode = case_when(
-      chd11educ %in% c(1, 2, 3) ~ 1,      # Below and high school diploma
-      chd11educ %in% c(4, 5) ~ 1,          # Some college
-      chd11educ %in% c(6, 7, 8) ~ 2,       # College and beyond
-      chd11educ == c(9) ~ 3,  
-      chd11educ %in% c(-8, -7, -6) ~ NA_real_, # Missing or not applicable
-      TRUE ~ NA_real_                      # Unhandled cases
-    )
-  )
-table(dementia1$edu_recode)
-
-
-# Marital Status: Recoding marital status into binary (married vs. not married)
-dementia1 <- dementia1 |>
-  mutate(
-    martstat_recode = case_when(
-      chd11martstat == 1 ~ 0,     # Married
-      chd11martstat %in% 2:6 ~ 1, # Not married (single, divorced, etc.)
-      chd11martstat %in% c(-8, -6) ~ NA_real_, # Missing or not applicable
-      TRUE ~ NA_real_                      # Unhandled cas
-    )
-  )
-
-table(dementia1$martstat_recode)
-
-```
-
-```{r}
-
-library(dplyr)
-library(tibble)
-# preparing dataset 
-final_dementia <- dementia1 |> 
-  mutate(
-    race_recode = case_when(
-      crl11dcgracehisp == 1 ~ "White, non-Hispanic",
-      crl11dcgracehisp == 2 ~ "Black, non-Hispanic",
-      crl11dcgracehisp == 3 ~ "Other",
-      crl11dcgracehisp == 4 ~ "Hispanic",
+      crl11dcgracehisp == 1 ~ "1",
+      crl11dcgracehisp == 2 ~ "2",
+      crl11dcgracehisp == 3 ~ "3",
+      crl11dcgracehisp == 4 ~ "4",
       TRUE ~ NA_character_
     ),
     gender_recode = case_when(
-      as.character(c11gender) == "1" ~ "Male",
-      as.character(c11gender) == "2" ~ "Female",
+      as.character(c11gender) == "1" ~ "1",
+      as.character(c11gender) == "2" ~ "2",
       TRUE ~ NA_character_
     ),
     edu_recode = case_when(
-      chd11educ %in% c(1, 2, 3) ~ "Below high school",
-      chd11educ %in% c(4, 5) ~ "Some college",
-      chd11educ %in% c(6, 7, 8) ~ "College and beyond",
-      chd11educ == 9 ~ "Unknown",
+      chd11educ %in% c(1, 2, 3) ~ "1",
+      chd11educ %in% c(4, 5) ~ "2",
+      chd11educ %in% c(6, 7, 8) ~ "3",
+      chd11educ == 9 ~ "4",
       TRUE ~ NA_character_
     ),
     martstat_recode = case_when(
-      chd11martstat == 1 ~ "Married",
-      chd11martstat %in% 2:6 ~ "Not married",
+      chd11martstat == 1 ~ "1",
+      chd11martstat %in% 2:6 ~ "2",
       TRUE ~ NA_character_
     )
   )
-
-
 ```
 
-Caregivers' caregiving activities
+### Caregivers' Features
 
-#recoding: 1(everyday), 2(most day), 3(someday)--1; 4(rarely),5(never)0 #C11 CA1 HOW OFT HELP WITH CHORES (cca11hwoftchs) #C11 CA2 HOW OFTEN SHOPPED FOR SP (cca11hwoftshp) #C11 CA6 HOW OFT HELP PERS CARE (cca11hwoftpc ) #C11 CA6B1 HELP CARE FOR TEETH (PREVIOUSLY CA11F) #C11 CA7 HOW OFT HLP GTNG ARD HOME (cca11hwofthom) #11 CA9 HOW OFTEN DROVE SP (cca11hwoftdrv) #C11 CA10 OFTN WENT ON OTH TRANSPR (cca11hwoftott )
+Based on a thorough examination of the literature and clinical experiences, I have identified these caregiving activities as the initial key factors to explore for predicting the mental health of caregivers. This selection is grounded in evidence from existing research and practical insights, aiming to provide a comprehensive understanding of the elements that most significantly impact caregiver well-being.
 
 ```{r}
-library(dplyr)
+
 dementia1 <- dementia1 |>
   mutate(across(
     c(cca11hwoftchs, cca11hwoftshp, cca11hwoftpc, 
       cca11hwofthom, cca11hwoftdrv, cca11hwoftott), 
   )) |>
   mutate(
-    cca11hwoftchs_recoded = case_when(
+    cca11hwoftchs_recoded = case_when( #CA1 HOW OFTEN HELP WITH CHORES
       cca11hwoftchs %in% c(1, 2, 3) ~ 1,
       cca11hwoftchs %in% c(4, 5) ~ 0,
       TRUE ~ NA_real_
     ),
-    cca11hwoftshp_recoded = case_when(
+    cca11hwoftshp_recoded = case_when( #HOW OFTEN SHOPPED FOR SP
       cca11hwoftshp %in% c(1, 2, 3) ~ 1,
       cca11hwoftshp %in% c(4, 5) ~ 0,
       TRUE ~ NA_real_
     ),
-    cca11hwoftpc_recoded = case_when(
+    cca11hwoftpc_recoded = case_when( #HOW OFTEN HELP PERS CARE
       cca11hwoftpc %in% c(1, 2, 3) ~ 1,
       cca11hwoftpc %in% c(4, 5) ~ 0,
       TRUE ~ NA_real_
     ),
-    cca11hwofthom_recoded = case_when(
+    cca11hwofthom_recoded = case_when( #HOW OFT HLP GETTING ARDUND HOME
       cca11hwofthom %in% c(1, 2, 3) ~ 1,
       cca11hwofthom %in% c(4, 5) ~ 0,
       TRUE ~ NA_real_
     ),
-    cca11hwoftdrv_recoded = case_when(
+    cca11hwoftdrv_recoded = case_when( #HOW OFTEN DROVE SP 
       cca11hwoftdrv %in% c(1, 2, 3) ~ 1,
       cca11hwoftdrv %in% c(4, 5) ~ 0,
       TRUE ~ NA_real_
     ),
-    cca11hwoftott_recoded = case_when(
+    cca11hwoftott_recoded = case_when( # HOW OFTN WENT ON OTH TRANSPRORT
       cca11hwoftott %in% c(1, 2, 3) ~ 1,
       cca11hwoftott %in% c(4, 5) ~ 0,
       TRUE ~ NA_real_
     )
   )
   
-
-#C11 CA3 EVER HELP ORDER MEDICINES (cca11hlpordmd) - yes 1 no 2-->0
+#C11 CA3 EVER HELP ORDER MEDICINES (cca11hlpordmd) - binary questions: yes --> 1 , recoded no (2)-->0
 #C11 CA5A GO ONLINE billing or banking (cca11hlpbnkng)
 #C11 CA5A GO ONLINE SHOP FR GROC (cca11cmpgrcry)
 #C11 CA5B GO ONLINE ORDER MEDS (cca11cmpordrx )
@@ -471,19 +429,35 @@ dementia1 <- dementia1 |>
       ),
     .names = "{.col}_recoded"
   ))
+
+#che11enrgylmt #Energy often limited 
+#cac11diffphy # Caregiver physical difficulty helping 
+#cac11exhaustd #Caregiver exhausted at night 
+#cac11toomuch #Care more than can handle 
+#cac11uroutchg #Care routine then changes 
+#cac11notime #No time for self (-8,-7,-6) 
+#cac11diffemlv #Caregiver emotional difficulty (-1, 1-5)
+#cpp11hlpkptgo #Kept from going out (-6-1, 1,2) 
+#cac11diffinc #Caregiver financial difficulties (-8,-7,-6, binary 1,2) 
+#cpp11hlpkptgo #Kept from going out (-6-1, 1,2) 
+
+dementia1 <- dementia1 |>
+  mutate(across(
+    c(che11enrgylmt, cac11diffphy, cac11exhaustd, 
+      cac11toomuch, cac11uroutchg, cac11notime,cac11diffemlv, cpp11hlpkptgo, cac11diffinc, cpp11hlpkptgo),
+    ~ case_when(
+        . == 1 ~ 1,
+        . == 2 ~ 0,
+        . %in% c(-8, -6, -1) ~ NA_real_,
+        TRUE ~ NA_real_
+      ),
+    .names = "{.col}_recoded"
+  ))
 ```
 
-#caregiver's caregiving activities cca11hwoftchs #C11 CA1 HOW OFT HELP WITH CHORES cca11hwoftshp #C11 CA2 HOW OFTEN SHOPPED FOR SP cca11hwoftpc #C11 CA6 HOW OFT HELP PERS CARE cca11hwofthom #C11 CA7 HOW OFT HLP GTNG ARD HOME cca11hwoftdrv #11 CA9 HOW OFTEN DROVE SP cca11hwoftott #C11 CA10 OFTN WENT ON OTH TRANSPR
+### **Outcomes (Anxiety and Depression)**
 
-# caregiver's features
-
-che11enrgylmt #Energy often limited cac11diffphy \# Caregiver physical difficulty helping cac11exhaustd #Caregiver exhausted at night cac11toomuch #Care more than can handle cac11uroutchg #Care routine then changes cac11notime #No time for self (-8,-7,-6) cac11diffemlv #Caregiver emotional difficulty (-1, 1-5) cpp11hlpkptgo #Kept from going out (-6-1, 1,2) che11health #General health (-8, 1-5) che11sleepint #Interrupted sleep (-8,-7,-6, 1-5) op11numhrsday #Number of hours per day help (-7,-1, 1-6) op11numdaysmn #Number of days help per month (-7,-1 1-6)
-
-#Sociodemographic features (persons living with dementia and caregiver) table(dementia1\$cac11notime)
-
-op11leveledu #Caregiver education (na -1, 1-5) cac11diffinc #Caregiver financial difficulties (-8,-7,-6, binary 1,2) ew11progneed1 #Persons living with dementia received food stamps (-8, -7 binary) ew11finhlpfam #Persons living with dementia financial help from family (-8, -7) binary mc11havregdoc #Persons living with dementia have a regular doctor (1,2binary) hc11hosptstay #Persons living with dementia hospital stay in last (1,2) 12-months hc11hosovrnht #Persons living with dementia number of hospital stays (-7, -1, 1-6 times)
-
-**Outcomes**: Caregivers' anxiety and depressive symptoms are measured by two questions each.First, anxiety was measured Generalized Anxiety Disorder-2 (GAD-2) Scale which consists of two questions. Since the NHATS provided GAD-2 data, this study utilized it to measure anxiety levels among care recipients. Each item on the scale is rated on a four-point Likert scale, ranging from 0 (not at all) to 3 (nearly every day), resulting in a total score between 0 and 6. Higher scores correspond to greater anxiety, with a total GAD-2 score of 3 or more indicating anxiety.
+Caregivers' anxiety and depressive symptoms are measured by two questions each.First, anxiety was measured Generalized Anxiety Disorder-2 (GAD-2) Scale which consists of two questions. Since the NHATS provided GAD-2 data, this study utilized it to measure anxiety levels among care recipients. Each item on the scale is rated on a four-point Likert scale, ranging from 0 (not at all) to 3 (nearly every day), resulting in a total score between 0 and 6. Higher scores correspond to greater anxiety, with a total GAD-2 score of 3 or more indicating anxiety.
 
 The care recipients' depression was evaluated using the Patient Health Questionnaire-2 (PHQ-2) Scale. Given that the NHATS included PHQ-2, this study utilized it to measure depression in care recipients. Each item on the scale was measured with a four-point Likert scale, ranging from 0 (not at all) to 3 (nearly every day), resulting a total score between 0 and 6, with higher scores indicating more severe depression. A PHQ-2 score ranges from 0-6. The authors identified a score of 3 as the optimal cutpoint when using the PHQ-2 to screen for depression. If the score is 3 or greater, major depressive disorder is likely.
 
@@ -502,102 +476,77 @@ dementia1$phq2_cg_cat <- ifelse(dementia1$total_phq2 < 3, 0, 1)
  summary(dementia1$phq2_cg_cat) #1 ~ depression
 ```
 
-**Data analysis**
+## **Data analysis**
 
 For data analysis, we first conducted descriptive analyses, including means, standard deviations, ranges, and percentages, to summarize the dataset. To investigate how caregivers' social strains and caregiver-level factors influence caregiver depression, we performed logistic regression analyses. Guided by the conceptual framework of this study, univariate logistic regression analyses were employed to identify caregivers' social strains and caregiver-level factors significantly associated with caregiver anxiety and depression, controlling for care recipient-level factors. Variables with a p-value below 0.05 in the univariate analyses were included in the subsequent multivariate logistic regression model. The multivariate model was then constructed to determine which factors most strongly influenced caregiver anxiety and depression. All statistical analyses were conducted using R, with statistical significance set at a p-value of less than 0.05.
 
-##  {#sec-results}
-
 ```{r}
-#choosing only one caregiver for each participant
-final <- dementia1 |>
-  group_by(spid) |>
-  slice_head(n = 1) |>
-  ungroup()
 
-#total 563 caregivers 
-#creating subset to work more effectively
-library(dplyr)
-selected_vars <- c(
-  "spid","demclas", "cca11hwoftchs", "cca11hwoftshp", "cca11hwoftpc",
+# Creating subset to see Pearson's coefficient
+selected_vars1 <- c("spid", "demclas", "cac11diffphy", "cac11exhaustd", "cac11diffemlv", "cca11hwoftchs", "cca11hwoftshp", "cca11hwoftpc",
   "cca11hwofthom", "cca11hwoftdrv", "cca11hwoftott",
-  "che11enrgylmt", "cac11diffphy", "cac11exhaustd",
-  "cac11toomuch", "cac11uroutchg", "cac11notime",
-  "cac11diffemlv", "cpp11hlpkptgo", "che11health", 
-  "che11sleepint", 
-   "ew11progneed1", "ew11finhlpfam", 
+  "che11enrgylmt", "cpp11hlpkptgo", "che11health", 
+  "che11sleepint", "ew11progneed1", "ew11finhlpfam", 
   "mc11havregdoc", "hc11hosptstay", "hc11hosovrnht", 
-  "cac11diffinc", "pa11hlkepfvst", "pa11hlkpfrclb", "pa11hlkpgoenj", "pa11hlkpfrwrk", "pa11hlkpfrvol", "pa11prcranoth", "race_recode", "gender_recode", "edu_recode", "chd11dage", "martstat_recode", "phq2_cg_cat", "gad2_cg_cat"
+  "cac11diffinc", "race_recode", "gender_recode", 
+  "edu_recode", "chd11dage", "martstat_recode", 
+  "phq2_cg_cat", "gad2_cg_cat"
 )
-
-dementia_subset <- dementia1 |> select(all_of(selected_vars))
-head(dementia_subset)
+dementia_subset1 <- dementia1 |> select(all_of(selected_vars1))
 
 # Select only numeric columns
-numeric_dementia1 <- dementia_subset |> select(where(is.numeric))
+numeric_dementia2 <- dementia_subset1 |> select(where(is.numeric))
 
-# Compute the correlation matrix
-cor_matrix <- cor(numeric_dementia1, method = "kendall", use = "pairwise.complete.obs")
-# Filter correlations above a threshold
-high_corr <- which(abs(cor_matrix) > 0.8 & abs(cor_matrix) < 1, arr.ind = TRUE)
-high_corr_pairs <- data.frame(
-  Var1 = rownames(cor_matrix)[high_corr[, 1]],
-  Var2 = colnames(cor_matrix)[high_corr[, 2]],
-  Correlation = cor_matrix[high_corr]
-)
-print(high_corr_pairs)
-# Install and load pheatmap if necessary
-library(pheatmap)
+# Compute the Pearson correlation matrix and p-values
+cor_matrix1 <- rcorr(as.matrix(numeric_dementia2), type = "pearson")
 
-# Create the heatmap
-pheatmap(cor_matrix, color = colorRampPalette(c("blue", "white", "red"))(50))
+# Extract correlation coefficients and p-values
+cor_coefficients <- cor_matrix1$r
+p_values <- cor_matrix1$P
+
+# Print the correlation coefficients and p-values
+print("Pearson Correlation Coefficients:")
+print(cor_coefficients)
+print("P-Values:")
+print(p_values)
 
 ```
 
-Since my outcomes are GAD-2 and PHQ-2, I am most focused on those variables surrounding the square: `che11energylmt`, `che11health`, `cac11diffemlv`, `hc11hosovrnht`, `marstat_recode`, `race_recode`, `mc11havregdoc`, `gender_recode`, `cca11hwoftott`, `ia11totinc`, `ew11finhlpfam`, and `ew11progneed`.
-
-```{r}
-#| echo: false
-#another correlation
-
-# Load the library
-library(ggcorrplot)
-
-# Plot the correlation matrix
-ggcorrplot(cor_matrix, method = "circle", type = "lower", lab = TRUE, lab_size = 3)
-```
-
-Pearson's correlation matrices were presented as heatmaps for both rounds (5 and 7) to visually assess the data and evaluate the independence of variables (Supplementary Figure 2a and b). The Pearson's correlation coefficient quantifies the linear relationship between two continuous variables, with values ranging from −1 to +1. A coefficient of 0 indicates no linear correlation, while negative and positive values represent negative and positive correlations, respectively. A p-value of \< .05 was used to define statistical significance. Then I selected the most representative variable to reduce redundancy in concepts among highly correlated items. The negative values in the dataset were not addressed in this step.
+Pearson's correlation matrices were presented to visually assess the data and evaluate the independence of variables. The Pearson's correlation coefficient quantifies the linear relationship between two continuous variables, with values ranging from −1 to +1. A coefficient of 0 indicates no linear correlation, while negative and positive values represent negative and positive correlations, respectively. A p-value of \< .05 was used to define statistical significance. Then I selected the most representative variable to reduce redundancy in concepts among highly correlated items. The negative values in the dataset were not addressed in this step. Based on the Pearson's coefficient, I decided that GAD-2 (Anxiety) and PHQ-2 (Depression) could have similar variables as they appear to be correlated.
 
 ### Imputation
 
-The original dataset includes numerous negative and N/A values, and the sample size is small, necessitating preprocessing before feature selection. To handle the small sample size, negative values were transformed into N/A values. These N/A values were then imputed based on the type of feature. For continuous variables, N/A values were replaced with the median of the respective column, while the most frequent category level was used to impute N/A values for categorical features:
-
-che11energylmt, che11health, cac11diffemlv, hc11hosovrnht, marstat_recode, race_recode, mc11havregdoc, gender_recode, cca11hwoftott, ia11totinc, ew11finhlpfam, ew11progneed.
+The original dataset includes numerous negative and N/A values, and the sample size is small, necessitating preprocessing before feature selection. To handle the small sample size, negative values were transformed into N/A values. These N/A values were then imputed based on the type of feature. For continuous variables, N/A values were replaced with the median of the respective column, while the most frequent category level was used to impute N/A values for categorical features.
 
 ```{r}
+
 #coverting negative value to NA
-dementia_subset[dementia_subset < 0] <- NA
+dementia_subset1[dementia_subset1 < 0] <- NA
 
 #imputation
-continuous_vars <- sapply(dementia_subset, is.numeric)  # categorical
-dementia_subset[continuous_vars] <- lapply(dementia_subset[continuous_vars], function(x) ifelse(is.na(x), median(x, na.rm = TRUE), x))
+continuous_vars <- sapply(dementia_subset1, is.numeric)
+dementia_subset1[continuous_vars] <- lapply(dementia_subset1[continuous_vars], function(x) ifelse(is.na(x), median(x, na.rm = TRUE), x))
 
 # categorical: change NA to max
-categorical_vars <- sapply(dementia_subset, is.factor)  # find
-dementia_subset[categorical_vars] <- lapply(dementia_subset[categorical_vars], function(x) {
-  levels(x) <- append(levels(x), names(sort(table(x), decreasing = TRUE))[1])  
-  ifelse(is.na(x), names(sort(table(x), decreasing = TRUE))[1], x)  
+categorical_vars <- sapply(dementia_subset1, is.character)
+dementia_subset1[categorical_vars] <- lapply(dementia_subset1[categorical_vars], function(x) {
+  x <- as.factor(x)
+  levels(x) <- append(levels(x), names(sort(table(x), decreasing = TRUE))[1])
+  ifelse(is.na(x), names(sort(table(x), decreasing = TRUE))[1], x)
 })
 
+
+remaining_nas <- sapply(dementia_subset1, function(x) sum(is.na(x)))
+print(remaining_nas)
 ```
 
 ```{r}
-#final cleaning for dataset
-final_dementia <- dementia_subset |>
+#One more step: cleaning the data to select one caregiver per participant. 
+final_dementia <- dementia_subset1 |>
   group_by(spid) |>
   slice_head(n = 1) |>
   ungroup()
+
 
 #creating new dataset for each outcome
 anxiety <- subset(
@@ -607,117 +556,72 @@ anxiety <- subset(
              chd11dage, martstat_recode)
 )
 
+
 depression <- subset(
   final_dementia,
   select = c(phq2_cg_cat, cca11hwoftchs, cca11hwoftshp, cca11hwoftott, che11enrgylmt, 
              cac11diffphy, cac11exhaustd, cac11diffemlv, che11health, che11sleepint, ew11progneed1, race_recode, gender_recode, edu_recode, 
              chd11dage, martstat_recode)
 )
+
+remaining_nas <- sapply(depression, function(x) sum(is.na(x)))
+print(remaining_nas)
 ```
 
-## Results
+# Results
 
-### Characteristics of Participants
+## Characteristics of Participants
+
+For the variable "Race," in the first group 'Probable Dementia' (N = 331), 46% (98 individuals) were White, non-Hispanic, 39% (82 individuals) were Black, non-Hispanic, 3.3% (7 individuals) were of another race, and 11% (24 individuals) were Hispanic. There were 120 missing values. In the second group 'Possible Dementia' (N = 232), 61% (54 individuals) were White, non-Hispanic, 31% (28 individuals) were Black, non-Hispanic, 2.2% (2 individuals) were of another race, and 5.6% (5 individuals) were Hispanic. There were 143 missing values. The p-value for this variable is 0.13.
+
+For the variable "Gender," in the first group, 29% (64 individuals) were male and 71% (155 individuals) were female, with 112 missing values. In the second group, 34% (32 individuals) were male and 66% (61 individuals) were female, with 139 missing values. The p-value for this variable is 0.4.
+
+For the variable "Education," in the first group, 42% (89 individuals) had an education below high school, 45% (96 individuals) had some college education, and 13% (27 individuals) had a college education or beyond. There were 119 missing values. In the second group, 49% (44 individuals) had an education below high school, 41% (37 individuals) had some college education, and 10% (9 individuals) had a college education or beyond. There were 142 missing values. The p-value for this variable is 0.5.
+
+For the variable "Marital Status," in the first group, 47% (74 individuals) were not married and 53% (83 individuals) were married, with 174 missing values. In the second group, 41% (29 individuals) were not married and 59% (41 individuals) were married, with 162 missing values. The p-value for this variable is 0.4. For the variable "Age," the mean age in the first group was 63 years with a standard deviation of 19 years, and there were 112 missing values. In the second group, the mean age was 62 years with a standard deviation of 21 years, and there were 139 missing values. The p-value for this variable is 0.8. The statistical tests used include Fisher’s exact test, Pearson’s Chi-squared test, and the Wilcoxon rank sum test.
 
 ```{r}
 
-# Summary and Visualization of 'demclas'
-table(final$demclas) #1 probable dementia #2 dementia diagnosis
-# Adding labels for clarity
-final$demclas_label <- factor(
-  final$demclas, 
+# preparing dataset - recoding some covariates
+final_dementia <- final_dementia |> 
+  mutate(
+    race_recode = case_when(
+      race_recode == 1 ~ "White, non-Hispanic",
+      race_recode == 2 ~ "Black, non-Hispanic",
+      race_recode == 3 ~ "Other",
+      race_recode == 4 ~ "Hispanic",
+      TRUE ~ NA_character_
+    ),
+    gender_recode = case_when(
+      as.character(gender_recode) == "1" ~ "Male",
+      as.character(gender_recode) == "2" ~ "Female",
+      TRUE ~ NA_character_
+    ),
+    edu_recode = case_when(
+      edu_recode == "1" ~ "Below high school",
+      edu_recode == "2" ~ "Some college",
+      edu_recode == "3" ~ "College and beyond",
+      TRUE ~ NA_character_
+    ),
+    martstat_recode = case_when(
+      martstat_recode == "2" ~ "Married",
+      martstat_recode == "1" ~ "Not married",
+      TRUE ~ NA_character_
+    )
+  )
+
+# Dementia class -Adding labels for clarity
+final_dementia$demclas_label <- factor(
+final_dementia$demclas, 
   levels = c(1, 2), 
   labels = c("Probable Dementia", "Possible Dementia")
 )
 
-# Plotting with the updated legend
-ggplot(final, aes(x = demclas_label)) + 
-  geom_histogram(
-    stat = "count", 
-    color = "grey", 
-    fill = "grey", 
-    alpha = 0.7
-  ) +
-  labs(
-    title = "Distribution of Dementia Classifications",
-    x = "Dementia Class",
-    y = "Count",
-    fill = "Dementia Type"
-  ) +
-  theme_minimal()
-
-
-```
-
-#### Graph
-
-```{r}
-
-# Dementia class analyses
-
-#labeling variables.
-final1 <- final_dementia |> 
-  mutate(
-    race_recode = factor(race_recode, levels = c("0", "1", "2", "3"),
-                         labels = c("White, non-Hispanic", "Black, non-Hispanic", "Other", "Hispanic")),
-    gender_recode = factor(gender_recode, levels = c("0", "1"),
-                           labels = c("Male", "Female")),
-    edu_recode = factor(edu_recode, levels = c("1", "2", "3" ),
-                        labels = c("Below high school", "Some college", "College and beyond")),
-    martstat_recode = factor(martstat_recode, levels = c("0", "1"),
-                             labels = c("Not Married", " Married"))
-  )
-
-# 1. Bar Plot for Categorical Variables (e.g., Race, Gender, Education, Marital Status)
-# Race
-ggplot(final1, aes(x = race_recode, fill = demclas)) + 
-  geom_bar() +  # Default bar plot based on counts
-  labs(title = "Race Distribution by Demographic Class",
-       x = "Race",
-       y = "Count") +
-  scale_fill_brewer(palette = "Set3") + 
-  theme_minimal()
-# Gender - Count plot
-ggplot(final1, aes(x = gender_recode, fill = demclas)) + 
-  geom_bar() +  # Default bar plot based on counts
-  labs(title = "Gender Distribution by Demographic Class",
-       x = "Gender",
-       y = "Count") +
-  scale_fill_brewer(palette = "Set3") + 
-  theme_minimal()
-
-# Education - Count plot
-ggplot(final1, aes(x = edu_recode, fill = demclas)) + 
-  geom_bar() +  # Default bar plot based on counts
-  labs(title = "Education Distribution by Demographic Class",
-       x = "Education",
-       y = "Count") +
-  scale_fill_brewer(palette = "Set3") + 
-  theme_minimal()
-
-# Marital Status - Count plot
-ggplot(final1, aes(x = martstat_recode, fill = demclas)) + 
-  geom_bar() +  # Default bar plot based on counts
-  labs(title = "Marital Status Distribution by Demographic Class",
-       x = "Marital Status",
-       y = "Count") +
-  scale_fill_brewer(palette = "Set3") + 
-  theme_minimal()
-
-# 2. Boxplot for Continuous Variable (Age)
-ggplot(final1, aes(x = demclas, y = chd11dage, fill = demclas)) +
-  geom_boxplot() +
-  labs(title = "Age Distribution by Demographic Class",
-       x = "Demographic Class",
-       y = "Age") +
-  scale_fill_brewer(palette = "Set3") + 
-  theme_minimal()
-
-library(gtsummary)
-#making table
-summary_table <- final1 |>
-  select(race_recode, gender_recode, edu_recode, martstat_recode, chd11dage) |>
+#creating table, classfied by group 1 (proable dementia) and group 2 (possible dementia)
+summary_table <- final_dementia |>
+  select(demclas, race_recode, gender_recode, edu_recode, martstat_recode, chd11dage) |>
   tbl_summary(
+    by = demclas,  
     statistic = list(all_continuous() ~ "{mean} ({sd})", all_categorical() ~ "{n} ({p}%)"),
     label = list(
       race_recode ~ "Race",
@@ -728,33 +632,18 @@ summary_table <- final1 |>
     ),
     missing_text = "(Missing)"
   ) |>
+  add_p() |>  # adding p-value 
   modify_header(label ~ "**Variable**") |>  
-  bold_labels() 
+  bold_labels()  
 
-
+# summarize 
 summary_table
+
 ```
 
-This exploratory study employs multiple machine learning techniques—including correlation matrix analysis, glm, and random forest (RF)—to identify key predictors of caregiver depression and anxiety. This multipronged approach is essential given the diverse types of data in this study. Machine learning methods, being inductive, support hypothesis generation and allow for systematic feature reduction by excluding variables deemed unimportant across multiple methods. This approach refines the feature set, enhancing the interpretability and predictive accuracy of the models.
+## Logistic regression
 
-```{r}
-#| label: load-packages
-#| include: false
-library(kernlab)
-library(randomForest)
-library(glmnet)
-library(xgboost)
-library(vip)
-library(tidymodels)
-library(yardstick)
-library(pROC)
-library(lattice)
-library(caret)
-library(broom)
-tidymodels_prefer()
-```
-
-### Logistic regression
+I conducted logistic regression first to understand the relationships between variables and establish a baseline model for comparison with more complex machine learning models. This approach helps identify significant predictors and provides a benchmark for performance.
 
 ```{r}
 # Logistic regression for outcome gad2_cg_cat
@@ -777,9 +666,9 @@ model_phq2 <- glm(
   family = binomial(link = "logit")
 )
 summary(model_phq2)
-
-
 ```
+
+I calculated the odds ratios and confidence intervals for the `gad2_cg_cat` and `phq2_cg_cat` models. Then, I combined these results into tidy tables for each model and printed them. Additionally, I used the `broom` package to create tidy results for both models, including exponentiated coefficients and confidence intervals, and printed these as well.
 
 ```{r}
 # Calculate odds ratios and confidence intervals for gad2_cg_cat model
@@ -810,7 +699,6 @@ results_phq2 <- data.frame(
 print("Odds Ratios for phq2_cg_cat Model:")
 print(results_phq2)
 
-library(broom)
 tidy_gad2 <- tidy(model_gad2, exponentiate = TRUE, conf.int = TRUE)
 tidy_phq2 <- tidy(model_phq2, exponentiate = TRUE, conf.int = TRUE)
 
@@ -819,13 +707,13 @@ print(tidy_gad2)
 
 print("Tidy Results for phq2_cg_cat Model:")
 print(tidy_phq2)
-
-
 ```
 
-### GLM
+## Machine Learning
 
-#### Anxiety
+This exploratory study employs multiple machine learning techniques—including GLM, and random forest (RF)—to identify key predictors of caregiver depression and anxiety. This multipronged approach is essential given the diverse types of data in this study. Machine learning methods, being inductive, support hypothesis generation and allow for systematic feature reduction by excluding variables deemed unimportant across multiple methods. This approach refines the feature set, enhancing the interpretability and predictive accuracy of the models.
+
+### GLM - Anxiety
 
 ```{r}
 #creating training/ testing data
@@ -877,8 +765,8 @@ print(anxiety_glm_pred_values)
 ```
 
 ```{r}
-#cross validation  20
-anxiety_folds<-vfold_cv(anxiety_train, v=20)
+#cross validation  10
+anxiety_folds<-vfold_cv(anxiety_train, v=10)
 
 glm_workflow<-workflow()|>
   add_model(lr_class_spec)|>
@@ -887,14 +775,13 @@ glm_workflow<-workflow()|>
 glm_fit_cv<-glm_workflow|>
   fit_resamples(anxiety_folds, control=control_resamples(save_pred=TRUE))
 collect_metrics(glm_fit_cv)
-#AUC 0.8808
+#AUC 0.8700			
 
 anxiety_glm_cv_preds<-collect_predictions(glm_fit_cv)
 anxiety_glm_cv_preds |>
   group_by(id) |>
   roc_curve(truth = gad2_cg_cat, .pred_0) |>
   autoplot()
-
 
 #Prediction on the test data
 anxiety.lr.pred.values.test <-  bind_cols(
@@ -904,6 +791,8 @@ anxiety.lr.pred.values.test <-  bind_cols(
 )
 anxiety.lr.pred.values.test
 
+
+
 #Plot of ROC curve of prediction on test results
 autoplot(roc_curve(anxiety.lr.pred.values.test, 
                    truth, 
@@ -911,10 +800,10 @@ autoplot(roc_curve(anxiety.lr.pred.values.test,
 
 #Metrics of prediction on test data
 metrics(anxiety.lr.pred.values.test, truth, .pred_class, .pred_0)
-#roc_auc 0.7938
+#roc_auc 0.8174
 ```
 
-Depression
+### GLM - Depression
 
 ```{r}
 #creating training/ testing data
@@ -966,8 +855,8 @@ print(depression_glm_pred_values)
 ```
 
 ```{r}
-#cross validation  20
-depression_folds<-vfold_cv(depression_train, v=20)
+#cross validation 10-fold
+depression_folds<-vfold_cv(depression_train, v=10)
 
 depression_glm_wf <- workflow ()|>
   add_model(lr_class_spec)|>
@@ -976,7 +865,7 @@ depression_glm_wf <- workflow ()|>
 depression_glm_fit_cv<-depression_glm_wf |>
   fit_resamples(depression_folds, control=control_resamples(save_pred=TRUE))
 collect_metrics(depression_glm_fit_cv)
-#AUC 0.8219
+#AUC 0.8314	
 
 depression_glm_cv_preds<-collect_predictions(depression_glm_fit_cv)
 depression_glm_cv_preds |>
@@ -999,24 +888,18 @@ autoplot(roc_curve(depression.lr.pred.values.test,
 
 #Metrics of prediction on test data
 metrics(depression.lr.pred.values.test, truth, .pred_class, .pred_0)
-#roc_auc 0.8837
+#roc_auc 0.8674
 ```
 
-### Random Forest (RF)
+I performed a 10-fold cross-validation on a logistic regression model to predict depression (phq2). The workflow was created, and the model was fitted using the cross-validation folds, achieving an AUC of 0.8314. Predictions were collected and ROC curves were plotted to visualize the model's performance. Next, I made predictions on the test data and plotted the ROC curve for these predictions. The model's AUC on the test data was 0.8674, indicating good predictive performance. Metrics for the test data predictions were also collected for further analysis.
+
+### Random Forest (RF)- Anxiety
 
 I specified a random forest model with 1,000 trees and a minimum node size of 5, using the `randomForest` engine for classification and enabling variable importance. I trained the model on the `anxiety_train` dataset and visualized the top predictors based on Mean Decrease Gini.
 
-For model validation, I performed 20-fold cross-validation, integrating the random forest model into a workflow. The model achieved a strong **ROC-AUC score of 0.91**, demonstrating excellent classification performance.
-
-#### Anxiety
+For model validation, I performed 10-fold cross-validation, integrating the random forest model into a workflow. The model achieved a strong **ROC-AUC score of 0.91**, demonstrating excellent classification performance.
 
 ```{r}
-library(tune)
-library(parsnip)
-library(recipes)
-library(rsample)
-library(workflows)
-
 rf_spec<-rand_forest(trees=1000, min_n=5)|>
   set_engine("randomForest", importance=TRUE)|>
   set_mode("classification")
@@ -1035,8 +918,8 @@ rf_fit|>
   as.data.frame()|>
   arrange(desc(MeanDecreaseGini))
 
-#20fold CV- rf
-anxiety_folds<-vfold_cv(anxiety_train, v=20)
+#10fold CV- rf
+anxiety_folds<-vfold_cv(anxiety_train, v=10)
 rf_workflow <- workflow() |>
   add_model(rf_spec) |>
   add_formula(gad2_cg_cat ~ .)
@@ -1044,9 +927,11 @@ rf_workflow <- workflow() |>
 rf_fit_cv <- rf_workflow |>
   fit_resamples(anxiety_folds, control=control_resamples(save_pred=TRUE))
 collect_metrics(rf_fit_cv) 
-
-#roc_auc = 0.9100
+#accuracy = 0.8378
+#roc_auc = 0.9172
 ```
+
+\
 
 ```{r}
 anxiety_rf_cv_preds<-collect_predictions(rf_fit_cv)
@@ -1066,22 +951,39 @@ anxiety_rf_fit <- rf_spec |>
 
 anxiety_rf_fit
 
-#testing
+anxiety_rf_pred_class <- predict(anxiety_rf_fit, new_data = anxiety_test)
+str(anxiety_rf_pred_class) 
+
 anxiety_rf_pred_values <- bind_cols(
   truth = anxiety_test$gad2_cg_cat,  # Actual values of the outcome variable
   predict(anxiety_rf_fit, new_data = anxiety_test),  # Predicted class labels
   predict(anxiety_rf_fit, new_data = anxiety_test, type = "prob")  # Predicted probabilities
 )
+
+anxiety_rf_pred_values <- bind_cols(
+  truth = anxiety_test$gad2_cg_cat,  # 실제 클래스 값
+  predicted_class = anxiety_rf_fit$.pred_class,  # 예측된 클래스
+  predicted_prob_0 = anxiety_rf_fit$.pred_0,  # 클래스 0에 대한 예측 확률
+  predicted_prob_1 = anxiety_rf_fit$.pred_1,  # 클래스 1에 대한 예측 확률
+)
+
+
+anxiety_rf.pred.values <- bind_cols(
+  truth = anxiety_test$gad2_cg_cat,
+  predict(anxiety_rf_fit, ),
+  predict(anxiety_rf_fit, , type = "prob")
+)
+head(anxiety_rf_fit)
 roc_auc(anxiety_rf_pred_values,
         truth, 
         .pred_0)
-#roc_auc = 0.8577
+#roc_auc = 0.9260425	
 autoplot(roc_curve(anxiety_rf_pred_values, 
                    truth, 
                    .pred_0))
 ```
 
-I did cross-validation predictions and calculated the **ROC-AUC** for each fold. Then, I plotted the **ROC curve** for the cross-validation results. Afterward, I fitted the random forest model to the full training data (`anxiety_train`) and predicted class labels and probabilities on the test data, achieving a **ROC-AUC** of 0.8577. Finally, you plotted the **ROC curve** for the test set predictions.
+I did cross-validation predictions and calculated the **ROC-AUC** for each fold. Then, I plotted the **ROC curve** for the cross-validation results. Afterward, I fitted the random forest model to the full training data (`anxiety_train`) and predicted class labels and probabilities on the test data, achieving a **ROC-AUC** of 0.926. Finally, I plotted the **ROC curve** for the test set predictions.
 
 ```{r}
 anxiety_rf_fit |>
@@ -1093,9 +995,25 @@ anxiety_rf_fit |>
   vip()
 ```
 
+I extracted the fitted random forest model for anxiety (`anxiety_rf_fit`) and calculated the importance of each predictor variable using the `importance()` function. This step helped identify which variables had the most significant impact on the model's predictions. To further understand these contributions, I visualized the variable importance using the `vip()` function.
+
+The analysis revealed that the top five variables influencing the model were:
+
+1.  **cac11exhaustd**: Caregivers' feeling of exhaustion.
+
+2.  **che11energylmt**: Caregivers' feeling of lacking energy.
+
+3.  **cac11diffphy**: Caregivers' difficulty with providing physical help.
+
+4.  **che11sleepint**: Caregivers' difficulty with sleep.
+
+5.  **che11health**: Caregivers' own health problems.
+
+These findings highlight the significant factors contributing to anxiety among caregivers, emphasizing the physical and emotional challenges they face.
+
 ```{r}
-#20-fold cross validation on rf
-anxiety_folds<-vfold_cv(anxiety_train, v=20)
+#10-fold cross validation on rf
+anxiety_folds<-vfold_cv(anxiety_train, v=10)
 
 rf_workflow <- workflow() |>
   add_model(rf_spec) |>
@@ -1105,7 +1023,7 @@ rf_fit_cv_anxiety <- rf_workflow |>
   fit_resamples(resamples = anxiety_folds)
 
 collect_metrics(rf_fit_cv_anxiety)
-#roc_auc = 0.917
+#roc_auc = 0.8978032	
 
 rf_wf_fit_cv_anxiety <- rf_workflow |>
   fit_resamples(
@@ -1113,7 +1031,7 @@ rf_wf_fit_cv_anxiety <- rf_workflow |>
     control = control_resamples(save_pred = TRUE)
   )
 
-collect_metrics(rf_wf_fit_cv_anxiety) #roc_auc = 0.9154106	
+collect_metrics(rf_wf_fit_cv_anxiety) #roc_auc = 0.9012371		
 
 rf_wf_fit_cv_anxiety |>
   collect_predictions() |>
@@ -1122,22 +1040,20 @@ rf_wf_fit_cv_anxiety |>
 
 # Collect metrics from the resampling results
 rf_wf_fit_cv_anxiety_metrics <- collect_metrics(rf_wf_fit_cv_anxiety)
-#roc_auc = 0.9213547	
 
-# If you need predictions for further analysis
-rf_wf_fit_cv_anxiety_preds <- collect_predictions(rf_wf_fit_cv_anxiety)
 
 ```
 
-The random forest model demonstrated strong performance with consistent **ROC AUC** values across different evaluations: **0.917**, **0.9154**, and **0.9213**. These results indicate the model's ability to effectively distinguish between the classes. The ROC curve further confirmed this, showing the model's good classification ability.
+I performed a 10-fold cross-validation on a random forest model to predict anxiety (gad2_cg_cat). The workflow was created, and the model was fitted using the cross-validation folds. The initial AUC was 0.8978, and after saving predictions, the AUC slightly improved to 0.9012. ROC curves were plotted to visualize the model's performance, and metrics were collected for further analysis.
 
-#### Depression
+### RF- Depression
+
+I created a random forest model with 1000 trees and a minimum node size of 5 to classify depression using the `phq2_cg_cat` variable. After fitting the model to the training data, I extracted the importance of the top variables, using the `MeanDecreaseGini` measure to identify the most influential features. Different from anxiety, new variable chd11dage (caregiver's age) is one of the influential feature.
 
 ```{r}
 rf_fit |>
   extract_fit_engine() |>
   vip()
-
 
 rf_spec<-rand_forest(trees=1000, min_n=5)|>
   set_engine("randomForest", importance=TRUE)|>
@@ -1159,8 +1075,8 @@ depression_rf_fit|>
   as.data.frame()|>
   arrange(desc(MeanDecreaseGini))
 
-#20fold CV- rf
-depression_folds<-vfold_cv(depression_train, v=20)
+#10fold CV- rf
+depression_folds<-vfold_cv(depression_train, v=10)
 depression_rf_workflow <- workflow() |>
   add_model(rf_spec) |>
   add_formula(phq2_cg_cat ~ .)
@@ -1168,12 +1084,10 @@ depression_rf_workflow <- workflow() |>
 depression_rf_fit_cv <- depression_rf_workflow |>
   fit_resamples(depression_folds, control=control_resamples(save_pred=TRUE))
 collect_metrics(depression_rf_fit_cv) 
-#roc_auc = 0.8975
+
 ```
 
-I created a random forest model with 1000 trees and a minimum node size of 5 to classify depression using the `phq2_cg_cat` variable. After fitting the model to the training data, I extracted the importance of the top variables, using the `MeanDecreaseGini` measure to identify the most influential features.
-
-For evaluation, I performed 20-fold cross-validation on the training data, resulting in a **ROC AUC** of **0.8975**, indicating good performance in classifying depression.
+The analysis revealed that, unlike the anxiety model, a new variable, `chd11dage` (caregiver's age), emerged as one of the top influential features. This indicates that the age of the caregiver plays a significant role in predicting depression, highlighting a key difference in the factors contributing to depression compared to anxiety. This insight can be crucial for tailoring interventions and support for caregivers based on their age.
 
 ```{r}
 depression_rf_cv_preds<-collect_predictions(depression_rf_fit_cv)
@@ -1203,7 +1117,7 @@ depression_rf_pred_values <- bind_cols(
 roc_auc(depression_rf_pred_values,
         truth, 
         .pred_0)
-#roc_auc = 0.9109
+
 
 autoplot(roc_curve(depression_rf_pred_values, 
                    truth, 
@@ -1211,19 +1125,7 @@ autoplot(roc_curve(depression_rf_pred_values,
 
 ```
 
-I collected the predictions from the 20-fold cross-validation of the random forest model and calculated the **ROC AUC** for each fold, confirming the model's performance. The ROC curve was plotted to visualize the classification ability.
-
-After fitting the model on the full training data, I tested it on the separate test set. The model achieved a **ROC AUC** of **0.9109** on the test data, demonstrating strong classification performance. The ROC curve for the test predictions further supported this finding.
-
-```{r}
-depression_rf_fit |>
-  extract_fit_engine() |>
-  importance()
-
-depression_rf_fit |>
-  extract_fit_engine() |>
-  vip()
-```
+I collected predictions from the cross-validated random forest model for depression and calculated the ROC AUC for each fold. I then plotted the ROC curve to visualize the model's performance. After fitting the random forest model on the full training data, I tested it on the test data, calculated the ROC AUC, and plotted the ROC curve for the test predictions.
 
 ```{r}
 
@@ -1234,9 +1136,8 @@ rf_spec_depression<-rand_forest(trees=1000, min_n=5)|>
 rf_fit_depression<-rf_spec_depression|>
   fit(phq2_cg_cat ~ ., data=depression_train)
 
-
-#20-fold cross validation on rf
-depression_folds<-vfold_cv(depression_train, v=20)
+#10-fold cross validation on rf
+depression_folds<-vfold_cv(depression_train, v=10)
 
 rf_workflow_depression <- workflow() |>
   add_model(rf_spec_depression) |>
@@ -1246,7 +1147,7 @@ rf_fit_cv_depression <- rf_workflow_depression |>
   fit_resamples(resamples = depression_folds)
 
 collect_metrics(rf_fit_cv_depression)
-#roc_auc = 0.8848794		
+#roc_auc = 0.8840857			
 
 rf_wf_fit_cv_depression <- rf_workflow_depression |>
   fit_resamples(
@@ -1254,7 +1155,7 @@ rf_wf_fit_cv_depression <- rf_workflow_depression |>
     control = control_resamples(save_pred = TRUE)
   )
 
-collect_metrics(rf_wf_fit_cv_depression) #roc_auc = 0.8985	
+collect_metrics(rf_wf_fit_cv_depression) #roc_auc = 0.8814059		
 
 rf_wf_fit_cv_depression |>
   collect_predictions() |>
@@ -1264,17 +1165,17 @@ rf_wf_fit_cv_depression |>
 # Collect metrics from the resampling results
 
 collect_metrics(rf_wf_fit_cv_depression)
-#roc_auc = 0.89855		
+#roc_auc = 0.8814059			
 
-# If you need predictions for further analysis
-rf_wf_fit_cv_depression_preds <- collect_predictions(rf_wf_fit_cv_depression)
 ```
 
-The **ROC AUC** for the cross-validation results was **0.8995**, indicating good model performance. After including the `save_pred = TRUE` control option, which stores predictions for each fold, I recalculated the **ROC AUC**, obtaining **0.8885**.
+I created a random forest model specification (`rf_spec_depression`) with 1000 trees and a minimum node size of 5, setting it to use the "randomForest" engine with importance measures enabled. This model was then fitted to the depression training data (`phq2_cg_cat`). Next, I performed 10-fold cross-validation on this random forest model using the training data. The workflow was created and fitted to the cross-validation folds, achieving an initial AUC of 0.8841. After saving predictions, the AUC was slightly adjusted to 0.8814. I also plotted the ROC curve to visualize the model's performance and collected metrics from the resampling results to evaluate the model's effectiveness.
 
-#### Graph
+## **Comparison of ROC Curves for Logistic Regression and Random Forest Models in Anxiety and Depression Prediction**
 
-Anxiety
+I generated ROC curves for both the logistic regression and random forest models on the training and cross-validation sets for anxiety and depression prediction. The ROC curves were plotted using `ggplot2` to compare the performance of the models. The plot includes: **Logistic Regression (Training)**: Solid blue line, **Logistic Regression (10-fold CV)**: Dashed green line, **Random Forest (Training)**: Solid red line, and **Random Forest (10-fold CV)**: Dashed purple line. This visualization helps in comparing the true positive rate (sensitivity) against the false positive rate (1 - specificity) for each model and dataset, providing insights into their predictive performance.
+
+### Anxiety
 
 ```{r}
 # ROC curve for GLM training set
@@ -1318,8 +1219,6 @@ coord_equal() +
 ### Depression
 
 ```{r}
-library(yardstick)
-
 # ROC curve for GLM training set
 depression_roc_glm_training <- depression_glm_pred_values |>
   roc_curve(truth = truth, .pred_0)
@@ -1364,15 +1263,17 @@ coord_equal() +
             color = "purple", size = 2, linetype = "dashed")
 ```
 
-### Data Missing Analysis
+## Implication
 
-```{r}
+The implications of this study highlight the significant factors contributing to anxiety and depression among caregivers. By identifying key predictors such as caregivers' feelings of exhaustion, lack of energy, difficulty with physical help, sleep issues, and health problems, the study highlighted the multifaceted challenges faced by caregivers. Additionally, the discovery that caregiver's age is a significant predictor of depression provides new insights for targeted interventions.
 
-```
+Given that this was an exploratory study, the findings serve as a foundation for future research. Future studies should aim to validate these results with larger and more diverse samples, and explore the underlying mechanisms driving these associations. Longitudinal studies are particularly valuable as they can track changes over time, offering insights into how these factors evolve and their long-term impact on caregivers. Since the NHATS (National Health and Aging Trends Study) and NSOC (National Study of Caregiving) are longitudinal studies, obtaining the next round of data from these sources will be crucial. This will allow for a more comprehensive analysis and help in identifying trends and patterns that can inform targeted interventions and support programs for caregivers.
+
+Overall, this exploratory research paves the way for more comprehensive investigations and the development of tailored support programs to improve the well-being of caregivers.
 
 **Limitations**:\
 Despite the robust analysis and promising results, there are several limitations to consider. First, the sample size for both the training and testing sets may not fully capture the diversity of the target population, potentially limiting the generalizability of the findings. Second, while cross-validation helps to reduce overfitting, it does not account for all potential biases or variations within different subgroups of the data. Third, missing data, if not adequately handled, could have introduced bias or reduced the accuracy of model predictions. Furthermore, the models used are based on observed data and may not fully capture complex relationships or interactions that could emerge with a broader set of variables or external factors. Lastly, the reliance on specific features may limit the scope of the model's performance in more dynamic or varied real-world scenarios.
 
-## Conclusion
+# Conclusion
 
-In conclusion, we performed 20-fold cross-validation on both anxiety and depression datasets using GLM and random forest models. For both outcomes, we achieved high AUC values, indicating strong model performance. The variable importance analysis highlighted key features influencing predictions. Additionally, the ROC curve plots demonstrated good classification accuracy for both anxiety (AUC = 0.91) and depression (AUC = 0.91) models. These results suggest that the random forest models are effective in predicting anxiety and depression based on the available features.
+This exploratory study highlights the critical factors influencing anxiety and depression among caregivers, providing a foundation for future research and targeted interventions. Further validation and longitudinal studies are needed to deepen our understanding and support the well-being of caregivers.
